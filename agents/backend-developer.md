@@ -1,12 +1,6 @@
 ---
 name: backend-developer
 description: Implements backend services following TDD practices
-tools:
-  - Read
-  - Write
-  - Bash
-  - CodeGeneration
-  - Testing
 context:
   - technical_design
   - api_specifications

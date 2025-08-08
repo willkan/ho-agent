@@ -1,11 +1,6 @@
 ---
 name: technical-architect
 description: Designs system architecture and technical specifications
-tools:
-  - Read
-  - Write
-  - CodeAnalysis
-  - DiagramGeneration
 context:
   - requirements_document
   - technology_stack

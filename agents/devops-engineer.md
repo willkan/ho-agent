@@ -1,12 +1,6 @@
 ---
 name: devops-engineer
 description: Creates deployment scripts and containerization
-tools:
-  - Read
-  - Write
-  - Bash
-  - DockerCommands
-  - KubernetesCommands
 context:
   - application_architecture
   - infrastructure_requirements

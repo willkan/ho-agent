@@ -1,10 +1,6 @@
 ---
 name: documentation-writer
 description: Creates comprehensive product and deployment documentation
-tools:
-  - Read
-  - Write
-  - DiagramGeneration
 context:
   - codebase
   - api_specs

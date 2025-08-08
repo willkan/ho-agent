@@ -1,12 +1,6 @@
 ---
 name: qa-engineer
 description: Ensures product quality by validating against technical specs and UX designs
-tools:
-  - Read
-  - Write
-  - TestAutomation
-  - BugTracking
-  - Validation
 context:
   - technical_design
   - ux_designs

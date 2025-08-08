@@ -1,13 +1,6 @@
 ---
 name: coordinator
 description: Central orchestration agent for multi-agent development workflow
-tools:
-  - Read
-  - Write
-  - Bash
-  - StateQuery
-  - ConflictResolution
-  - QualityGateEnforcement
 context:
   - global_project_state
   - agent_activities

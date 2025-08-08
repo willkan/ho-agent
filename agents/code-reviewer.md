@@ -1,11 +1,6 @@
 ---
 name: code-reviewer
 description: Ensures code quality through systematic review processes
-tools:
-  - Read
-  - CodeAnalysis
-  - SecurityAnalysis
-  - PerformanceAnalysis
 context:
   - coding_standards
   - security_requirements

@@ -1,12 +1,6 @@
 ---
 name: frontend-developer
 description: Implements frontend components with mock backend testing
-tools:
-  - Read
-  - Write
-  - Bash
-  - CodeGeneration
-  - BrowserTesting
 context:
   - prototype_design
   - component_specs

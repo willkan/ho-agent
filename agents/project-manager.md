@@ -1,11 +1,6 @@
 ---
 name: project-manager
 description: Manages project planning, task breakdown and dependency analysis
-tools:
-  - Read
-  - Write
-  - TaskPlanning
-  - DependencyAnalysis
 context:
   - requirements_document
   - technical_design

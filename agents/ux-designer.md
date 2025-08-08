@@ -1,12 +1,6 @@
 ---
 name: ux-designer
 description: Creates user experience designs and validates implementation
-tools:
-  - Read
-  - Write
-  - Bash
-  - Design
-  - Testing
 context:
   - requirements
   - technical_constraints
