@@ -26,10 +26,9 @@ shared_state:
     strategy: "coordinator_mediated"
     timeout: 120  # 2分钟冲突解决超时
 
-# Agent pool definition (增加coordinator)
+# Agent pool definition
 agents:
   - id: coordinator
-    max_instances: 1
     responsibilities:
       - "Global state management"
       - "Agent conflict resolution" 
@@ -38,34 +37,24 @@ agents:
     always_active: true
 
   - id: requirements-analyst
-    max_instances: 1
     
   - id: technical-architect
-    max_instances: 1
     
   - id: ux-designer
-    max_instances: 1
     
   - id: project-manager
-    max_instances: 1
     
   - id: frontend-developer
-    max_instances: 1  # 减少到1个避免冲突
     
   - id: backend-developer
-    max_instances: 1  # 减少到1个避免冲突
     
   - id: qa-engineer
-    max_instances: 1
     
   - id: devops-engineer
-    max_instances: 1
     
   - id: documentation-writer
-    max_instances: 1
     
   - id: code-reviewer
-    max_instances: 1
     on_demand: true
 
 # Progressive execution phases
@@ -127,32 +116,37 @@ workflow:
     tasks:
       - task: requirements-analysis
         agent: requirements-analyst
+        workflow:
+          - "Check for existing requirements documentation"
+          - "If requirements exist, validate and enhance them"
+          - "If no requirements exist, create comprehensive requirements"
+          - "Generate acceptance criteria based on requirements"
         outputs:
-          - requirements.md
-          - acceptance-criteria.json
+          - docs/requirements.md  # Only create if not exists
+          - docs/acceptance-criteria.json
           
       - task: technical-design
         agent: technical-architect
-        inputs: [requirements.md]
+        inputs: [docs/requirements.md]
         outputs:
-          - architecture.md
-          - api-spec.yaml
-          - database-schema.sql
+          - docs/architecture.md
+          - docs/api-spec.yaml
+          - docs/database-schema.sql
           
       - task: ux-design
         agent: ux-designer  
-        inputs: [requirements.md]
+        inputs: [docs/requirements.md]
         outputs:
           - prototypes/
           - component-specs.json
           
       - task: development-planning
         agent: project-manager
-        inputs: [requirements.md, architecture.md, component-specs.json]
+        inputs: [docs/requirements.md, docs/architecture.md, component-specs.json]
         outputs:
-          - task-breakdown.json
-          - dependency-graph.mermaid
-          - development-plan.md
+          - docs/task-breakdown.json
+          - docs/dependency-graph.mermaid
+          - docs/development-plan.md
           
     checkpoints:
       - name: "planning-review"
@@ -198,8 +192,8 @@ workflow:
   # Stage 3: Module Development (核心改进)
   - stage: module-development
     description: "Develop modules with multi-layer validation"
-    plan_source: development-plan.md
-    dependency_source: dependency-graph.mermaid
+    plan_source: docs/development-plan.md
+    dependency_source: docs/dependency-graph.mermaid
     execution_mode: "controlled_parallel"
     
     # 改进的模块开发流程
@@ -279,7 +273,7 @@ workflow:
   - stage: enhanced-quality-assurance
     description: "Multi-dimensional quality validation"
     agent: qa-engineer
-    inputs: [requirements.md, acceptance-criteria.json, architecture.md, component-specs.json, frontend/, backend/]
+    inputs: [docs/requirements.md, docs/acceptance-criteria.json, docs/architecture.md, component-specs.json, frontend/, backend/]
     
     quality_dimensions:
       - dimension: "functional_compliance"
