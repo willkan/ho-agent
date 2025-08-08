@@ -1,0 +1,521 @@
+# Improved Development Workflow Configuration v2.0
+version: "2.0"
+name: "Controlled Collaborative Development Workflow"
+description: "Human-AI collaborative development with controlled parallelism and progressive validation"
+
+# Global settings
+settings:
+  execution_mode: "controlled_parallel"
+  max_concurrent_writers: 2        # 最多2个agent同时写代码
+  max_concurrent_readers: 4        # 可以4个agent同时读文件
+  file_lock_timeout: 300          # 5分钟文件锁超时
+  checkpoint_enabled: true
+  state_sync_interval: 30         # 30秒状态同步
+  auto_commit: false              # 改为手动提交，降低风险
+
+# Shared state management
+shared_state:
+  database: ".claude/state/project.db"
+  tables:
+    - agent_status: {agent_id, current_task, status, last_update, progress}
+    - file_locks: {file_path, locked_by, lock_time, operation_type}
+    - task_dependencies: {task_id, depends_on, status, blocking_reason}
+    - quality_metrics: {stage, metric_type, value, threshold, status}
+  
+  conflict_resolution:
+    strategy: "coordinator_mediated"
+    timeout: 120  # 2分钟冲突解决超时
+
+# Agent pool definition (增加coordinator)
+agents:
+  - id: coordinator
+    max_instances: 1
+    responsibilities:
+      - "Global state management"
+      - "Agent conflict resolution" 
+      - "Task priority assignment"
+      - "Quality gate enforcement"
+    always_active: true
+
+  - id: requirements-analyst
+    max_instances: 1
+    
+  - id: technical-architect
+    max_instances: 1
+    
+  - id: ux-designer
+    max_instances: 1
+    
+  - id: project-manager
+    max_instances: 1
+    
+  - id: frontend-developer
+    max_instances: 1  # 减少到1个避免冲突
+    
+  - id: backend-developer
+    max_instances: 1  # 减少到1个避免冲突
+    
+  - id: qa-engineer
+    max_instances: 1
+    
+  - id: devops-engineer
+    max_instances: 1
+    
+  - id: documentation-writer
+    max_instances: 1
+    
+  - id: code-reviewer
+    max_instances: 1
+    on_demand: true
+
+# Progressive execution phases
+execution_phases:
+  - phase: 1
+    name: "Single Developer Enhancement"
+    enabled_agents: [coordinator, requirements-analyst, technical-architect, documentation-writer]
+    execution_mode: "sequential"
+    description: "AI assists with analysis and documentation, human does development"
+    
+  - phase: 2  
+    name: "Front-Back Separation"
+    enabled_agents: [coordinator, requirements-analyst, technical-architect, frontend-developer, backend-developer, documentation-writer]
+    execution_mode: "sequential"
+    description: "AI handles front-end and back-end separately, no parallelism"
+    
+  - phase: 3
+    name: "Full Controlled Collaboration" 
+    enabled_agents: "*"
+    execution_mode: "controlled_parallel"
+    description: "All agents with controlled parallelism"
+
+# Human intervention points
+human_intervention:
+  mandatory_points:
+    - stage: "planning-phase-complete"
+      decision: "approve_requirements_and_architecture"
+      timeout: "24h"
+      description: "Review and approve requirements and technical architecture"
+      
+    - condition: "critical_architecture_change_detected"
+      decision: "approve_architecture_drift"
+      timeout: "4h" 
+      description: "Major architecture deviation detected, human approval required"
+      
+    - stage: "before_deployment"
+      decision: "approve_production_deployment"
+      timeout: "12h"
+      description: "Final approval before production deployment"
+      
+  optional_points:
+    - condition: "quality_issues_count > 5"
+      suggestion: "review_quality_issues"
+      auto_continue_after: "1h"
+      description: "Multiple quality issues detected, consider human review"
+      
+    - condition: "development_time > estimated_time * 1.5"
+      suggestion: "review_progress_and_scope"
+      auto_continue_after: "2h"
+      description: "Development taking longer than expected"
+
+# Improved workflow stages
+workflow:
+  # Stage 1: Planning Phase
+  - stage: planning-phase
+    description: "Requirements analysis and design planning with human oversight"
+    execution_mode: "sequential"  # 规划阶段使用顺序执行
+    
+    tasks:
+      - task: requirements-analysis
+        agent: requirements-analyst
+        outputs:
+          - requirements.md
+          - acceptance-criteria.json
+          
+      - task: technical-design
+        agent: technical-architect
+        inputs: [requirements.md]
+        outputs:
+          - architecture.md
+          - api-spec.yaml
+          - database-schema.sql
+          
+      - task: ux-design
+        agent: ux-designer  
+        inputs: [requirements.md]
+        outputs:
+          - prototypes/
+          - component-specs.json
+          
+      - task: development-planning
+        agent: project-manager
+        inputs: [requirements.md, architecture.md, component-specs.json]
+        outputs:
+          - task-breakdown.json
+          - dependency-graph.mermaid
+          - development-plan.md
+          
+    checkpoints:
+      - name: "planning-review"
+        trigger: "stage_complete"
+        action: "human_intervention_required"
+        
+    next: [framework-setup]
+
+  # Stage 2: Framework Setup
+  - stage: framework-setup
+    description: "Setup base frameworks with controlled execution"
+    execution_mode: "controlled_parallel"
+    max_parallel: 2
+    
+    tasks:
+      - task: backend-framework
+        agent: backend-developer
+        subtasks:
+          - "Setup project structure"
+          - "Configure database connections"
+          - "Setup testing framework"
+          - "Create basic API skeleton"
+        outputs: [backend/]
+        file_patterns: ["backend/**/*"]
+        
+      - task: frontend-framework  
+        agent: frontend-developer
+        subtasks:
+          - "Setup project structure"
+          - "Configure build tools"
+          - "Setup testing framework"
+          - "Create component library structure"
+        outputs: [frontend/]
+        file_patterns: ["frontend/**/*"]
+        
+    validation:
+      - name: "framework_compatibility"
+        type: "integration_test"
+        command: "npm run test:integration:basic"
+        
+    next: [module-development]
+
+  # Stage 3: Module Development (核心改进)
+  - stage: module-development
+    description: "Develop modules with multi-layer validation"
+    plan_source: development-plan.md
+    dependency_source: dependency-graph.mermaid
+    execution_mode: "controlled_parallel"
+    
+    # 改进的模块开发流程
+    for_each_module:
+      validation_layers:
+        # Layer 1: Unit Validation
+        - name: "unit_validation"
+          scope: "single_module"
+          tasks:
+            - task: backend-unit
+              agent: backend-developer
+              workflow:
+                - "Write unit tests"
+                - "Implement functionality"  
+                - "Run unit tests"
+                - "Code review (self)"
+              outputs: [backend/modules/${module_name}/]
+              
+            - task: frontend-unit
+              agent: frontend-developer
+              workflow:
+                - "Create components"
+                - "Write component tests"
+                - "Implement UI logic"
+                - "Run component tests"
+              outputs: [frontend/modules/${module_name}/]
+              
+        # Layer 2: Contract Validation (新增!)
+        - name: "contract_validation"
+          scope: "module_interfaces"
+          agent: coordinator
+          checks:
+            - "API schema consistency"
+            - "Data type compatibility"
+            - "Interface contract validation"
+            - "Error handling consistency"
+          outputs: [validation-reports/${module_name}/contract-validation.json]
+          
+        # Layer 3: Integration Validation
+        - name: "integration_validation"
+          scope: "cross_module"
+          agent: frontend-developer
+          tasks:
+            - "Test API integration"
+            - "Validate data flow"
+            - "Test user workflows"
+          outputs: [validation-reports/${module_name}/integration-validation.json]
+          
+      # 模块级检查点
+      checkpoints:
+        - name: "module-quality-gate"
+          trigger: "after_integration_validation"
+          conditions:
+            - "unit_tests_pass_rate >= 95%"
+            - "contract_validation_errors == 0"
+            - "integration_test_pass_rate >= 90%"
+          action: "block_if_failed"
+          
+    # 全局检查点
+    checkpoints:
+      - name: "architecture-review"
+        trigger: "after_first_module"
+        agent: technical-architect
+        action: |
+          if (architecture_drift_score > 0.3) {
+            return "architecture_drift_detected";
+          }
+          
+      - name: "progress-review"
+        trigger: "every_3_modules"
+        agent: coordinator
+        metrics: ["development_velocity", "quality_trend", "complexity_growth"]
+        
+    next: [enhanced-quality-assurance]
+
+  # Stage 4: Enhanced Quality Assurance
+  - stage: enhanced-quality-assurance
+    description: "Multi-dimensional quality validation"
+    agent: qa-engineer
+    inputs: [requirements.md, acceptance-criteria.json, architecture.md, component-specs.json, frontend/, backend/]
+    
+    quality_dimensions:
+      - dimension: "functional_compliance"
+        tests:
+          - "Validate against UX designs"
+          - "Verify API contracts"
+          - "Test acceptance criteria"
+          - "End-to-end user workflows"
+          
+      - dimension: "non_functional_compliance"
+        tests:
+          - "Performance benchmarking"
+          - "Security vulnerability scanning"
+          - "Accessibility compliance"
+          - "Mobile responsiveness"
+          
+      - dimension: "code_quality"
+        tests:
+          - "Code complexity analysis"
+          - "Test coverage validation"
+          - "Documentation completeness"
+          - "Code style consistency"
+          
+    outputs:
+      - quality-reports/functional-validation.json
+      - quality-reports/performance-report.json
+      - quality-reports/security-scan.json
+      - quality-reports/accessibility-report.json
+      - quality-reports/code-quality-metrics.json
+      
+    decision_matrix:
+      - if: "critical_issues_found OR security_vulnerabilities_high > 0"
+        next: [targeted-fixes]
+      - elif: "moderate_issues > 10 OR performance_degradation > 30%"
+        action: "human_intervention_suggested"
+        next: [targeted-fixes]
+      - else:
+        next: [deployment-prep]
+
+  # Stage 5: Targeted Fixes (改进的修复阶段)
+  - stage: targeted-fixes
+    description: "Intelligent issue resolution"
+    execution_mode: "controlled_parallel"
+    
+    # 智能问题分派
+    issue_routing:
+      - condition: "issue.category == 'backend_logic'"
+        agent: backend-developer
+        max_parallel: 1
+        
+      - condition: "issue.category == 'frontend_ui'"
+        agent: frontend-developer
+        max_parallel: 1
+        
+      - condition: "issue.category == 'integration'"
+        agents: [frontend-developer, backend-developer]
+        collaboration_mode: "paired_programming"
+        
+      - condition: "issue.category == 'architecture'"
+        agents: [technical-architect, coordinator]
+        escalation: "human_intervention_required"
+        
+    # 修复验证循环
+    fix_validation_loop:
+      max_iterations: 3
+      validation_steps:
+        - "Run targeted tests for fixed issues"
+        - "Regression testing"
+        - "Integration validation"
+      success_criteria:
+        - "targeted_tests_pass_rate == 100%"
+        - "no_new_regressions"
+        - "performance_not_degraded"
+        
+    next: [enhanced-quality-assurance]  # 循环回质量验证
+
+  # Stage 6: Deployment Preparation  
+  - stage: deployment-prep
+    description: "Production deployment preparation"
+    execution_mode: "controlled_parallel"
+    max_parallel: 2
+    
+    tasks:
+      - task: infrastructure-setup
+        agent: devops-engineer
+        subtasks:
+          - "Create production-ready Dockerfile"
+          - "Setup CI/CD pipeline"
+          - "Configure monitoring and logging"
+          - "Create deployment scripts"
+        outputs: [deploy/, .github/workflows/, docker-compose.prod.yml]
+        
+      - task: documentation-finalization
+        agent: documentation-writer
+        subtasks:
+          - "Generate API documentation"
+          - "Create user guides"
+          - "Write deployment instructions"
+          - "Document troubleshooting guides"
+        outputs: [docs/]
+        
+    checkpoints:
+      - name: "deployment-readiness"
+        checks:
+          - "All tests passing"
+          - "Documentation complete"
+          - "Security scan clean"
+          - "Performance benchmarks met"
+        action: "human_intervention_required"
+        
+    next: [production-deployment]
+
+  # Stage 7: Production Deployment
+  - stage: production-deployment
+    description: "Controlled production deployment"
+    requires_human_approval: true
+    
+    deployment_strategy: "blue_green"
+    rollback_plan: "automatic_on_health_check_fail"
+    
+    tasks:
+      - "Deploy to staging environment"
+      - "Run smoke tests"
+      - "Deploy to production"
+      - "Monitor health metrics"
+      - "Verify user workflows"
+      
+    success_criteria:
+      - "deployment_success_rate == 100%"
+      - "response_time_degradation < 10%"
+      - "error_rate < 0.1%"
+      
+    next: [project-completion]
+
+  # Stage 8: Project Completion
+  - stage: project-completion
+    description: "Project wrap-up and knowledge capture"
+    tasks:
+      - "Generate project retrospective report"
+      - "Document lessons learned"
+      - "Create maintenance handbook"
+      - "Archive project artifacts"
+      - "Tag final release"
+
+# Detailed quality rules
+quality_rules:
+  critical_blockers:
+    - type: "compile_error"
+      threshold: 0
+      action: "block"
+      
+    - type: "security_vulnerability"
+      severity: ["critical", "high"]
+      threshold: 0
+      action: "block"
+      
+    - type: "test_failure"
+      scope: "critical_path"
+      threshold: 0
+      action: "block"
+      
+    - type: "performance_regression"
+      threshold: "50%"
+      action: "block"
+      
+  quality_gates:
+    - type: "test_coverage"
+      threshold: 80
+      scope: "new_code"
+      action: "warn"
+      
+    - type: "code_complexity"
+      threshold: 10
+      action: "warn"
+      
+    - type: "documentation_coverage"
+      threshold: 75
+      action: "warn"
+
+# Monitoring and metrics
+monitoring:
+  metrics:
+    - name: "development_velocity"
+      unit: "story_points_per_sprint"
+      target: "> baseline * 1.2"
+      
+    - name: "quality_trend"  
+      unit: "defect_density"
+      target: "< 2 defects per 1000 LOC"
+      
+    - name: "agent_efficiency"
+      unit: "tasks_completed_per_hour"
+      target: "> human_baseline * 1.5"
+      
+  alerts:
+    - condition: "agent_conflict_rate > 10%"
+      action: "reduce_parallelism"
+      
+    - condition: "stuck_task_duration > 30min"
+      action: "escalate_to_coordinator"
+
+# Basic hooks for git integration
+hooks:
+  pre_stage:
+    - command: "git checkout -b feature/${stage_name}-$(date +%Y%m%d)"
+    
+  post_module:
+    - command: "git add . && git commit -m 'Complete ${module_name} module [${validation_status}]'"
+    
+  post_stage:
+    - command: "git tag ${stage_name}-complete-$(date +%Y%m%d_%H%M)"
+    
+  on_conflict:
+    - command: "git stash"
+    - notify: "coordinator"
+    - action: "pause_parallel_execution"
+    
+  on_human_intervention:
+    - command: "git add . && git commit -m 'WIP: Paused for human review at ${intervention_point}'"
+    - notify: "email_or_slack"
+
+# Pilot project configuration
+pilot_config:
+  recommended_project_criteria:
+    max_lines_of_code: 1000
+    max_team_size: 1
+    tech_stack_familiarity: "high"
+    requirements_stability: "high"
+    
+  success_metrics:
+    development_speed_improvement: "> 30%"
+    bug_rate_increase_limit: "< 10%"
+    code_quality_maintenance: "> 8/10"
+    developer_satisfaction: "> 7/10"
+    
+  fallback_strategy:
+    max_failures_per_stage: 3
+    auto_fallback_to_human: true
+    escalation_timeout: "2h"
