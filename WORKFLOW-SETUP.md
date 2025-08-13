@@ -54,6 +54,38 @@ This file provides guidance to Claude Code when working with this project.
 
 This project uses a sophisticated multi-agent development framework located in `.claude/` directory.
 
+## CRITICAL RULES FOR THIS PROJECT
+
+### 1. ABSOLUTE RULE: No Escape Routes
+**When encountering problems, fix them in place. NEVER create new files to bypass issues.**
+
+#### Forbidden Patterns:
+- ❌ server.js error → create simple-server.js
+- ❌ Complex component → create SimpleComponent.jsx
+- ❌ API issues → create mock-api.js
+- ❌ "Let me create a simpler version..."
+
+#### Required Process:
+1. Find error in EXISTING file
+2. Fix in ORIGINAL code
+3. Test on ORIGINAL implementation
+
+### 2. Continuous Execution
+- NEVER ask "Should I continue?"
+- Auto-proceed after validation
+- Only pause for: requirements, architecture, deployment
+
+### 3. Remember
+**"The only way out is through" - Fix problems where they are, don't create escape routes.**
+
+### Correct Workflow Example
+```
+✅ Stage 1 complete → validation passed → IMMEDIATELY start Stage 2
+✅ Found issue → create temporary test → test passes → RETURN to full implementation
+✅ Module validated → AUTOMATICALLY integrate with next module
+✅ All tests pass → PROCEED to next phase without asking
+```
+
 ### Quick Start for Claude Code
 
 **Available Agents:**
@@ -476,6 +508,18 @@ cp ho-agent/*.md .claude/agents/
 ## Multi-Agent Framework Available
 
 This project has multi-agent development framework configured in `.claude/` directory.
+
+## AUTOMATION RULES FOR THIS PROJECT
+
+### Continuous Workflow Execution
+- NEVER ask "Should I continue?" after successful validation
+- AUTOMATICALLY proceed to next stage when current completes
+- Only pause for: requirements approval, architecture changes, deployment
+
+### Temporary Test Recovery
+- When creating temporary tests (simple-xx, test-xx, minimal-xx, etc.)
+- ALWAYS return to full implementation after validation
+- NEVER treat temporary test as final solution
 
 ### Quick Agent Reference
 - `coordinator` - Task orchestration and conflict resolution

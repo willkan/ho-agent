@@ -8,6 +8,8 @@ design_principles:
   - "Natural language execution - Claude intelligently understands and executes"
   - "Intelligent problem handling - minimize human supervision"
   - "Layer-by-layer validation - catch issues early"
+  - "Continuous automation - stages flow automatically without human confirmation"
+  - "Smart validation recovery - always return to complete solution after simple tests"
 
 # Applicability
 applicable_projects:
@@ -22,6 +24,9 @@ non_applicable_projects:
 
 # Unified Workflow Execution Logic
 workflow_execution: |
+  IMPORTANT: This workflow is executed by Claude Code in the target project, not in this framework repository.
+  When a user copies this workflow to their project and asks Claude Code to use it, follow these instructions:
+  
   Claude, this project has multiple modules and needs progressive integration to avoid integration hell:
 
   Stage 1 - Complete Planning and Design:
@@ -55,8 +60,12 @@ workflow_execution: |
        - STOP immediately, do NOT proceed to Layer 2
        - Task(code-reviewer, "Analyze Layer 1 integration issues, provide specific fix solutions")
        - After fixes, re-validate Layer 1
+       - IMPORTANT: After fixing, automatically re-run validation
        
-       ✅ If validation passes: Continue to Layer 2 development
+       ✅ If validation passes:
+       - Mark Layer 1 as COMPLETED in state
+       - AUTOMATICALLY proceed to Layer 2 development
+       - NO HUMAN CONFIRMATION NEEDED - continue immediately
   
   2.3) Develop Layer 2 modules (dependent on Layer 1):
        - Develop based on validated Layer 1 interfaces
@@ -66,8 +75,15 @@ workflow_execution: |
        - Run cross-module integration tests
        - Verify data flow between Layer 1 and Layer 2
        - Test complete business processes
+       
+       ✅ If validation passes:
+       - AUTOMATICALLY continue to next layer
+       - NO PAUSE for human confirmation
+       - Update progress state and continue
   
-  Continue this pattern - each layer MUST pass validation before proceeding to next layer.
+  Continue this pattern - each layer MUST pass validation before AUTOMATICALLY proceeding to next layer.
+  
+  AUTOMATION RULE: After ANY validation success, immediately continue to next stage WITHOUT asking "Should I continue?" or "Would you like me to proceed?"
   
   Stage 3 - Quality Assurance:
   - Task(qa-engineer, "Comprehensive testing of all features, focus on inter-module integration")
@@ -113,11 +129,19 @@ progressive_integration_solution:
 problem_classification_handling:
   minor_issues:
     examples: ["missing files", "syntax errors", "import path errors"]
-    handling: "Claude auto-analyzes and fixes, continues execution"
+    handling: "Claude auto-analyzes and fixes, continues execution WITHOUT PAUSE"
     
   medium_issues:
     examples: ["interface mismatches", "data type conflicts", "test failures"]
-    handling: "Task(senior-developer) deep analysis, attempt automatic fix"
+    handling: |
+      1. Task(senior-developer) deep analysis, attempt automatic fix
+      2. If temporary validation needed (simple-xx, test-xx, minimal-xx, quick-xx, demo-xx, poc-xx, etc.): 
+         - Create temporary/simplified test case
+         - Validate hypothesis
+         - CRITICAL: After ANY temporary validation, MUST return to FULL implementation
+         - Track state: {original_task: "full_implementation", temp_validation: "type_of_test", validation_status: "completed"}
+         - Recognize patterns: simple-*, test-*, minimal-*, quick-*, demo-*, poc-*, temp-*, basic-*
+      3. Continue execution automatically after fix
     
   major_issues:
     examples: ["architecture design conflicts", "requirement misunderstanding", "technology stack adjustments"]
@@ -126,63 +150,79 @@ problem_classification_handling:
   handling_logic: |
     Claude intelligently handles problems during execution:
     
-    - Regular checks: Use ls, find, npm test, etc. to check status
-    - Auto-classification: Categorize problems by severity level
-    - Smart fixes: Direct fix for minor issues, AI analysis for medium issues
-    - Timely escalation: Major problems immediately reported, await human decision
+    VALIDATION FILE PROTOCOL:
+    1. Temporary validation files are ALLOWED for debugging
+    2. But MUST follow complete lifecycle:
+       - CREATE temp file and track it
+       - VALIDATE hypothesis
+       - APPLY solution to original file
+       - DELETE temp file
+       - VERIFY original problem is fixed
+    3. FORBIDDEN: Stopping at validation success
+       - simple-server.js works ≠ task complete
+       - Must fix server.js and delete simple-server.js
+       - Track all temp files to ensure cleanup
     
-    Goal: Only problems requiring human decision interrupt the workflow
+    AUTOMATION RULES:
+    1. NEVER ask "Should I continue?" after successful validation
+    2. ALWAYS auto-proceed to next stage when current stage completes
+    3. Direct problem solving - no temporary escapes, no simplified versions
+    4. Remember: "The only way out is through" - fix problems where they are
+    
+    Goal: Direct problem resolution with minimal human intervention
 
-# Practical Coordinator Execution Logic
-coordinator_executable_logic:
+# Coordinator Execution Instructions
+coordinator_instructions:
   status_management: |
-    # Create necessary directories
-    mkdir -p .claude/state .claude/reports .claude/config
+    Claude, when coordinating the workflow:
     
-    # Check current status
-    if [ -f ".claude/state/current.json" ]; then
-      current_stage=$(jq -r '.stage // "start"' .claude/state/current.json)
-      echo "Current stage: $current_stage"
-    else
-      echo '{"stage": "start", "timestamp": "'$(date)'"}' > .claude/state/current.json
-    fi
+    1. Initialize project structure:
+       - Create necessary directories for state tracking if needed
+       - Set up initial stage as "start"
+    
+    2. Track current progress:
+       - Maintain awareness of current stage in your context
+       - Record completion of each stage
+       - Automatically determine and proceed to next stage without asking user
   
-  validation_commands: |
-    # Check project structure
-    echo "📁 Checking project structure..."
-    find src/ -type d 2>/dev/null | head -10
+  validation_approach: |
+    Claude, validate each stage by:
     
-    # Count files
-    file_count=$(find src/ -name "*.js" -o -name "*.jsx" -o -name "*.ts" -o -name "*.tsx" 2>/dev/null | wc -l)
-    echo "📄 Generated files: $file_count"
+    1. Structure validation:
+       - Use LS tool to check if expected directories exist
+       - Use Glob tool to verify files are generated
+       - Ensure module organization matches architecture
     
-    # Run tests
-    if [ -f "package.json" ]; then
-      echo "🧪 Running tests..."
-      npm test 2>/dev/null || echo "⚠️ Tests failed, need fixing"
-    fi
+    2. Code validation:
+       - Count generated files to ensure completeness
+       - Verify all required components are present
     
-    # Check Git status
-    git status --porcelain | head -5
+    3. Test validation:
+       - Use Bash tool to run tests if available
+       - If tests fail, analyze errors and fix automatically
+       - Continue workflow after fixing - do not pause to ask user
+    
+    4. Automatic progression:
+       - When validation passes, immediately proceed to next stage
+       - Do not ask "Should I continue?" or similar questions
   
-  problem_detection: |
-    issues=()
+  problem_detection_strategy: |
+    Claude, detect and handle problems automatically:
     
-    # Check basic structure
-    test -d src/ || issues+=("Missing src directory")
-    test -f package.json || issues+=("Missing package.json")
+    1. Check for common issues:
+       - Use LS and Glob tools to verify expected structure
+       - Check if core files like package.json exist
+       - Ensure sufficient code has been generated
     
-    # Check file count
-    file_count=$(find src/ -name "*.js" -o -name "*.jsx" 2>/dev/null | wc -l)
-    [ $file_count -lt 2 ] && issues+=("Too few files generated")
+    2. Issue resolution by severity:
+       - Minor issues: Fix immediately and continue without pause
+       - Medium issues: May create temporary test to validate fix, but MUST return to full implementation
+       - Major issues: Only these require human intervention
     
-    # Report issues
-    if [ ${#issues[@]} -gt 0 ]; then
-      echo "🚨 Issues found: ${issues[@]}"
-      echo "Need AI analysis for resolution"
-    else
-      echo "✅ Validation passed"
-    fi
+    3. Validation success behavior:
+       - When validation passes, state "Validation passed, proceeding to next stage"
+       - Immediately continue without asking for permission
+       - Track that this stage is complete and move forward
 
 # Configuration Templates
 config_templates:
@@ -271,3 +311,90 @@ quick_start: |
   5. Comprehensive testing and deployment preparation
   
   Expected result: Fully integrated system without integration hell issues
+
+# Automation Execution Guidelines
+automation_guidelines:
+  continuous_flow:
+    description: "Ensure continuous workflow without unnecessary pauses"
+    rules:
+      - "After any stage validation passes, IMMEDIATELY continue to next stage"
+      - "Do NOT ask 'Should I continue?' or 'Would you like me to proceed?'"
+      - "Only pause for: architecture approval, deployment approval, major failures"
+      - "Minor and medium issues should be fixed and execution continued automatically"
+  
+  validation_recovery:
+    description: "Proper handling of temporary validation tests (ANY pattern)"
+    process: |
+      When encountering issues requiring validation:
+      1. Create temporary test case for hypothesis validation
+         Common patterns: simple-*, test-*, minimal-*, quick-*, demo-*, poc-*, temp-*, basic-*
+      2. Run the temporary test to verify assumptions
+      3. CRITICAL: After validation, MUST return to full implementation
+      4. Track state to ensure return to original task:
+         {
+           "original_task": "full_user_management_system",
+           "validation_test": "minimal-auth-test",  // could be any pattern
+           "is_temporary": true,
+           "validation_result": "passed",
+           "next_action": "implement_full_solution"
+         }
+      5. Never consider ANY temporary/simplified test as the final solution
+      6. Always complete the original full implementation
+      
+      Pattern detection regex: /^(simple|test|minimal|quick|demo|poc|temp|basic)[-_]/
+    
+    common_mistakes_to_avoid:
+      - "Forgetting to return to full implementation after temporary test"
+      - "Treating ANY temporary validation (simple-xx, test-xx, minimal-xx, etc.) as task completion"
+      - "Losing track of original requirements during validation"
+      - "Not recognizing temporary test patterns beyond simple-xx"
+      - "Stopping at poc/demo/test implementation instead of full solution"
+  
+  human_intervention_minimization:
+    mandatory_only:
+      - "Project requirements approval (initial only)"
+      - "Major architecture changes (breaking changes)"
+      - "Production deployment approval"
+    
+    auto_handled:
+      - "Stage transitions after validation"
+      - "Minor bug fixes and adjustments"
+      - "Module integration after successful tests"
+      - "Documentation updates"
+      - "Test execution and re-runs"
+    
+    decision_tree: |
+      Is validation successful?
+        YES -> Continue to next stage automatically
+        NO -> Is it a minor issue?
+          YES -> Fix and continue automatically
+          NO -> Is it a medium issue?
+            YES -> Analyze, fix, validate, continue automatically
+            NO -> Is it a major architectural issue?
+              YES -> Stop and request human intervention
+              NO -> Attempt intelligent resolution and continue
+
+# State Tracking for Automation
+state_tracking:
+  required_state_files:
+    - ".claude/state/current_stage.json"
+    - ".claude/state/validation_history.json"
+    - ".claude/state/original_tasks.json"
+  
+  state_tracking_guidelines: |
+    Claude, maintain state awareness throughout execution:
+    
+    1. After completing each stage:
+       - Remember what stage was just completed
+       - Identify the next stage to execute
+       - Proceed to next stage automatically
+    
+    2. When creating temporary validations:
+       - Recognize patterns: simple-*, test-*, minimal-*, quick-*, demo-*, poc-*, temp-*, basic-*
+       - Remember this is temporary and track the original full task
+       - After validation succeeds, ALWAYS return to implement the full solution
+    
+    3. Before considering any task complete:
+       - Verify you've implemented the full original requirements
+       - Ensure you're not stopping at a temporary validation
+       - Check that all originally requested features are present
