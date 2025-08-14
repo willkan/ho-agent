@@ -27,6 +27,17 @@ workflow_execution: |
   IMPORTANT: This workflow is executed by Claude Code in the target project, not in this framework repository.
   When a user copies this workflow to their project and asks Claude Code to use it, follow these instructions:
   
+  Claude, first determine if this is initial development or iterative development:
+  
+  DECISION POINT - Development Mode:
+  1. Check for existing project structure using LS and Glob tools
+  2. If core files exist (package.json, src/, etc.) -> ITERATIVE MODE
+  3. If starting fresh -> INITIAL MODE
+  
+  ═══════════════════════════════════════════════════════════════
+  MODE A: INITIAL DEVELOPMENT (First Time)
+  ═══════════════════════════════════════════════════════════════
+  
   Claude, this project has multiple modules and needs progressive integration to avoid integration hell:
 
   Stage 1 - Complete Planning and Design:
@@ -92,6 +103,181 @@ workflow_execution: |
   
   KEY PRINCIPLE: Validate each layer immediately after completion, catch and fix issues early, 
   avoid problem accumulation until final integration!
+  
+  ═══════════════════════════════════════════════════════════════
+  MODE B: ITERATIVE DEVELOPMENT (Second+ Time)
+  ═══════════════════════════════════════════════════════════════
+  
+  Claude, this is an iteration on existing project. Use smart strategy based on change scope:
+  
+  Stage 1 - Incremental Analysis:
+  1. Task(requirements-analyst, "Analyze ONLY new requirements, focusing on:
+     * What new features are needed
+     * Which existing modules will be affected
+     * Integration points with current system")
+  
+  2. Impact Assessment (CRITICAL for iteration efficiency):
+     Use Grep and Glob to identify:
+     - How many modules are affected (count)
+     - Dependency relationships between affected modules
+     - Whether changes are isolated or cross-cutting
+     
+     DECISION TREE:
+     ┌─────────────────────────────────┐
+     │  Affected Modules Count?        │
+     └─────────────┬───────────────────┘
+                   ▼
+     ┌──────────────────────────────┐
+     │  < 3 modules: SIMPLE MODE    │──► Sequential modification
+     │  ≥ 3 modules: Check deps     │
+     └─────────────┬────────────────┘
+                   ▼
+     ┌──────────────────────────────┐
+     │  Dependencies exist?         │
+     │  NO:  PARALLEL MODE          │──► All affected modules in parallel
+     │  YES: HYBRID MODE            │──► Independent groups parallel + dependent serial
+     └──────────────────────────────┘
+  
+  Stage 2 - Smart Execution with Regression Integration:
+  
+  CONTRACT-FIRST APPROACH (All modes):
+  Before ANY development:
+  - Define interface changes explicitly
+  - Generate contract tests
+  - Create mock implementations for testing
+  
+  SIMPLE MODE (< 3 modules):
+  - Direct sequential modification of affected modules
+  - No complex orchestration needed
+  - Task(developer, "Modify ${module_name} to add ${feature}")
+  - CRITICAL: After EACH module change, run REGRESSION INTEGRATION tests:
+    * Test the modified module's new features
+    * Test the modified module's existing features (regression)
+    * Test ALL modules that call this module
+    * Test ALL modules that this module calls
+    * Run affected E2E scenarios
+  
+  PARALLEL MODE (≥ 3 modules, no dependencies):
+  WARNING: "No dependencies" must be verified through:
+  - No shared database tables
+  - No shared API calls
+  - No shared state management
+  - No event pub/sub relationships
+  
+  Execute concurrently WITH contract tests:
+  - Task(frontend-developer, "Update ${module1} with contract tests")
+  - Task(backend-developer, "Add ${module2} APIs with contract validation")
+  - Task(backend-developer, "Update ${module3} with integration checks")
+  
+  CRITICAL: Intelligent Parallel Regression Gate:
+  - Each module must pass its own regression tests
+  - Then run cross-module integration tests
+  - If regression fails, apply smart failure handling:
+    * Analyze failure severity and scope
+    * Isolated failure: Fix affected module, others continue
+    * Cross-dependency failure: Coordinate fix between affected modules only
+    * System-wide failure: Only then stop all parallel work
+    * Apply same problem classification as initial development (minor/medium/major)
+  
+  HYBRID MODE (≥ 3 modules with dependencies):
+  2.1) Dependency Impact Analysis FIRST:
+      - Map ALL direct dependencies
+      - Map ALL transitive dependencies
+      - Identify hidden dependencies (DB, cache, events)
+      
+  2.2) Smart Grouping with Regression Awareness:
+      Group A: Truly independent modules
+      Group B: Modules dependent on Group A
+      Group C: Integration layer modules
+  
+  2.3) Execute Group A with Regression Guards:
+      For each module in parallel:
+      - Task(developer, "Implement ${module} with regression tests")
+      - Individual module regression validation
+      - Cross-group contract validation
+  
+  2.4) Group A Intelligent Regression Gate:
+      - ALL Group A modules must pass individual regression
+      - Run integration tests across Group A
+      - Test downstream impact on Group B modules (read-only)
+      - If regression fails, apply intelligent handling:
+        * Level 1 (minor): Auto-fix and continue
+        * Level 2 (medium): Attempt fix up to 3 times
+        * Level 3 (complex): Generate fix plan, get confirmation
+        * Level 4 (critical): Only then stop and restart from 2.3
+      - If passed or fixed: Proceed to Group B
+  
+  2.5) Execute dependent groups with cascade testing:
+      - Each dependent group must re-validate previous groups
+      - Regression tests accumulate (A → A+B → A+B+C)
+  
+  Stage 3 - Comprehensive Regression Integration Testing:
+  
+  REGRESSION TESTING MATRIX (Mandatory):
+  Level 1 - Module Regression:
+    - Task(qa-engineer, "Test each modified module:
+      * New functionality works correctly
+      * Existing functionality still works (regression)
+      * Performance hasn't degraded")
+  
+  Level 2 - Integration Regression:
+    - Task(qa-engineer, "Test integration points:
+      * Direct API calls between modules
+      * Shared data consistency
+      * Event propagation correctness
+      * Transaction boundaries")
+  
+  Level 3 - System Regression:
+    - Task(qa-engineer, "Test system-wide impacts:
+      * Critical user journeys (login → checkout)
+      * High-frequency operations
+      * Data integrity across modules
+      * Concurrent operation scenarios")
+  
+  Level 4 - Edge Case Regression:
+    - Test boundary conditions that might break
+    - Test error handling paths
+    - Test rollback scenarios
+  
+  INTELLIGENT REGRESSION FAILURE PROTOCOL:
+  When regression test fails:
+  1. ANALYZE first - don't stop immediately:
+     - Determine failure severity (Level 1-4)
+     - Identify impact scope (single module vs system-wide)
+     - Check if it's a test issue vs actual regression
+  
+  2. APPLY SMART HANDLING based on analysis:
+     Level 1 (minor - syntax, imports, formatting):
+       → Auto-fix and re-run immediately
+     Level 2 (medium - interface, types, parameters):
+       → Attempt guided fix (max 3 tries)
+     Level 3 (complex - performance, logic, concurrency):
+       → Generate fix solution, implement with confirmation
+     Level 4 (critical - architecture, security, data corruption):
+       → ONLY NOW stop for human intervention
+  
+  3. VALIDATE FIX appropriately:
+     - For Level 1-2: Re-run affected tests only
+     - For Level 3: Re-run module + integration tests
+     - For Level 4: Re-run ENTIRE regression suite
+  
+  4. CONTINUE OR ESCALATE:
+     - Fixed: Proceed to next stage
+     - Can't fix after 3 attempts: Escalate to next level
+     - Critical issues: Stop and wait for human decision
+  
+  Stage 4 - Incremental Deployment:
+  - No need to rebuild entire Docker/CI/CD
+  - Update only changed components
+  - Hot reload where possible
+  - Task(devops-engineer, "Deploy only modified modules: ${changed_modules_list}")
+  
+  ITERATION OPTIMIZATION RULES:
+  1. NEVER re-analyze entire system architecture
+  2. NEVER rebuild unchanged modules
+  3. NEVER recreate existing test infrastructure
+  4. ALWAYS preserve existing working code
+  5. FOCUS only on the delta (changes)
 
 # Progressive Integration Core Mechanism
 progressive_integration_solution:
@@ -125,11 +311,56 @@ progressive_integration_solution:
        - Data flow issues exposed during single-layer validation
        - Avoid problem accumulation until final integration
 
-# Intelligent Problem Handling
+# Unified Intelligent Problem Handling (Both Modes)
+unified_failure_classifier:
+  level_1_auto_fix:
+    examples: ["syntax errors", "import path errors", "missing semicolons", "wrong quotes", "indentation"]
+    detection: "AST parsing, linting errors"
+    handling: |
+      - Immediate auto-fix using AST manipulation
+      - No workflow interruption
+      - Fix and continue in < 2 minutes
+    max_time: "2 minutes"
+    
+  level_2_guided_fix:
+    examples: ["interface mismatches", "type conflicts", "parameter mismatches", "missing dependencies", "test assertion failures"]
+    detection: "Type checking, contract validation, test output analysis"
+    handling: |
+      1. Analyze root cause (not just symptoms)
+      2. Generate fix candidates
+      3. Apply most likely fix
+      4. Validate with targeted tests
+      5. Max 3 attempts before escalation
+      6. If test-related: may create temporary validation
+    max_time: "10 minutes"
+    
+  level_3_assisted_fix:
+    examples: ["performance regression", "logic errors", "concurrency issues", "complex integration failures", "data inconsistency"]
+    detection: "Performance metrics, integration test failures, data validation"
+    handling: |
+      1. Deep analysis with execution tracing
+      2. Generate detailed fix plan
+      3. Get quick confirmation (or auto-apply if confident)
+      4. Implement fix with careful validation
+      5. May need partial system restart
+    max_time: "30 minutes"
+    
+  level_4_human_required:
+    examples: ["architecture conflicts", "security vulnerabilities", "data corruption", "breaking API changes", "legal/compliance issues"]
+    detection: "Architecture drift detection, security scans, critical test failures"
+    handling: |
+      - Generate comprehensive report
+      - Stop affected work streams only
+      - Other independent work continues
+      - Wait for human decision
+    requires: "human intervention"
+
+# Intelligent Problem Handling (Backward Compatibility)
 problem_classification_handling:
   minor_issues:
     examples: ["missing files", "syntax errors", "import path errors"]
     handling: "Claude auto-analyzes and fixes, continues execution WITHOUT PAUSE"
+    maps_to: "level_1_auto_fix"
     
   medium_issues:
     examples: ["interface mismatches", "data type conflicts", "test failures"]
@@ -142,10 +373,12 @@ problem_classification_handling:
          - Track state: {original_task: "full_implementation", temp_validation: "type_of_test", validation_status: "completed"}
          - Recognize patterns: simple-*, test-*, minimal-*, quick-*, demo-*, poc-*, temp-*, basic-*
       3. Continue execution automatically after fix
+    maps_to: "level_2_guided_fix"
     
   major_issues:
     examples: ["architecture design conflicts", "requirement misunderstanding", "technology stack adjustments"]
     handling: "Generate detailed report, pause for human intervention"
+    maps_to: "level_4_human_required"
 
   handling_logic: |
     Claude intelligently handles problems during execution:
@@ -173,14 +406,32 @@ problem_classification_handling:
 
 # Coordinator Execution Instructions
 coordinator_instructions:
+  mode_detection: |
+    Claude, FIRST determine the development mode:
+    
+    1. Use LS and Glob tools to check for project indicators:
+       - Look for: package.json, src/, .git/, go.mod, requirements.txt, etc.
+       - If found -> ITERATIVE MODE
+       - If not found -> INITIAL MODE
+    
+    2. Store the detected mode in your context for the entire session
+    
+    3. Apply the appropriate workflow based on detected mode
+  
   status_management: |
     Claude, when coordinating the workflow:
     
-    1. Initialize project structure:
-       - Create necessary directories for state tracking if needed
-       - Set up initial stage as "start"
+    1. For INITIAL MODE:
+       - Create necessary directories for state tracking
+       - Execute full workflow from Stage 1
+       - Set up complete project structure
     
-    2. Track current progress:
+    2. For ITERATIVE MODE:
+       - Preserve all existing structure
+       - Skip redundant stages (architecture, DevOps setup)
+       - Focus on impact analysis and targeted changes
+    
+    3. Track current progress:
        - Maintain awareness of current stage in your context
        - Record completion of each stage
        - Automatically determine and proceed to next stage without asking user
@@ -262,25 +513,130 @@ config_templates:
       }
     }
 
+# Anti-Pattern Prevention for Iterations
+iteration_anti_patterns:
+  integration_hell_prevention:
+    description: "Prevent late integration failures in iterative development"
+    strategies:
+      - "Contract-first development for ALL changes"
+      - "Continuous integration testing during development, not after"
+      - "Parallel work requires proven independence verification"
+      - "Regression gates at EVERY stage transition"
+    
+    warning_signs:
+      - "Modules developed for >2 hours without integration test"
+      - "Parallel development without contract definition"
+      - "Skipping regression tests to 'save time'"
+      - "Testing only new features, not existing ones"
+  
+  deceptive_success_prevention:
+    description: "Prevent false positives that hide real issues"
+    strategies:
+      - "Never trust unit tests alone - always integration test"
+      - "Test the absence (what should NOT happen)"
+      - "Test downstream impacts, not just direct changes"
+      - "Regression tests are mandatory, not optional"
+    
+    validation_checklist:
+      - "Did you test what WASN'T supposed to change?"
+      - "Did you test modules that DEPEND on this one?"
+      - "Did you test with production-like data volumes?"
+      - "Did you test error scenarios, not just happy paths?"
+  
+  regression_integration_focus:
+    description: "Regression is MORE important than new features"
+    principles:
+      - "Breaking existing features is worse than not adding new ones"
+      - "Every change is guilty until proven innocent"
+      - "Test the unchanged to ensure it stays unchanged"
+      - "Integration regression > unit regression"
+    
+    mandatory_regression_points:
+      - "After EVERY module modification"
+      - "Before merging parallel work"
+      - "Before declaring stage complete"
+      - "Before any deployment"
+
+# Iteration Development Configurations
+iteration_development:
+  detection_patterns:
+    existing_project_indicators:
+      - "package.json"
+      - "src/"
+      - ".git/"
+      - "node_modules/"
+      - "requirements.txt"
+      - "go.mod"
+      - "Cargo.toml"
+  
+  module_impact_thresholds:
+    simple: 2     # < 3 modules: use simple sequential
+    medium: 5     # 3-5 modules: consider dependencies
+    complex: 999  # > 5 modules: always use hybrid approach
+  
+  optimization_strategies:
+    skip_in_iteration:
+      - "Full architecture redesign"
+      - "Complete UI/UX mockups"
+      - "DevOps infrastructure setup"
+      - "Project initialization"
+      - "Technology stack selection"
+    
+    reuse_from_existing:
+      - "Authentication system"
+      - "Database schemas"
+      - "API contracts"
+      - "Test infrastructure"
+      - "CI/CD pipelines"
+    
+    focus_areas:
+      - "New feature implementation"
+      - "Affected module updates"
+      - "Integration point modifications"
+      - "Regression test coverage"
+      - "Incremental deployment"
+
 # Usage Instructions
 usage_guide: |
-  Simple Usage:
+  INITIAL DEVELOPMENT Usage:
   
   User: "Help me develop a blog system with article publishing, user management, and comment functionality"
   
   Claude automatically executes:
-  1. Analyze requirements, design architecture, generate module configuration
-  2. Progressive development by dependency layers:
+  1. Detects no existing project -> INITIAL MODE
+  2. Full planning: requirements, architecture, UI/UX design
+  3. Progressive development by dependency layers:
      Layer 1: User management module
      Layer 2: Article publishing module (depends on user management)
      Layer 3: Comment functionality module (depends on previous two)
-  3. Validate each layer immediately after completion, catch issues early
-  4. Final quality assurance and documentation generation
+  4. Validate each layer immediately after completion, catch issues early
+  5. Complete quality assurance and deployment setup
+  
+  ────────────────────────────────────────────
+  
+  ITERATIVE DEVELOPMENT Usage:
+  
+  User: "Add a newsletter subscription feature to my existing blog system"
+  
+  Claude automatically executes:
+  1. Detects existing project structure -> ITERATIVE MODE
+  2. Incremental analysis: only newsletter requirements
+  3. Impact assessment: 2 modules affected (user + new newsletter module)
+  4. Decision: < 3 modules -> SIMPLE MODE
+  5. Sequential implementation:
+     - Update user model for subscription preferences
+     - Create newsletter module
+     - Integration testing
+  6. Regression tests on affected areas only
+  7. Incremental deployment of changes
+  
+  Time saved: 60-70% compared to full workflow
   
   Key Advantages:
-  ✅ Avoid integration hell - Progressive integration prevents issue accumulation
-  ✅ Reduce human supervision - Intelligent problem handling
-  ✅ Wide applicability - Suitable for medium to large projects
+  ✅ Smart mode selection - Automatically chooses optimal approach
+  ✅ Avoid redundant work - Skip unnecessary stages in iterations
+  ✅ Efficient parallelization - When beneficial, not always
+  ✅ Preserve existing work - Never break what's already working
   ✅ Actually executable - Designed based on Claude Code's real capabilities
 
 # Relationship with Original Workflow
@@ -295,22 +651,66 @@ improvements:
   - "Optimized for natural language execution"
   - "Enhanced intelligent problem handling capabilities"
 
-# Quick Start Example
+# Quick Start Examples
 quick_start: |
+  EXAMPLE 1 - Initial Development:
   User input: "I want to build an e-commerce system with product catalog, shopping cart, user accounts, and payment processing"
   
   Claude execution:
-  1. Analysis: 4 modules identified with clear dependencies
-  2. Layer planning:
+  1. Detection: No existing project files -> INITIAL MODE
+  2. Full analysis: 4 modules identified with clear dependencies
+  3. Layer planning:
      - Layer 1: user-accounts (no dependencies)
      - Layer 2: product-catalog (minimal user dependency)
      - Layer 3: shopping-cart (depends on users + products)
      - Layer 4: payment-processing (depends on all previous)
-  3. Progressive development with validation at each layer
-  4. Early integration issue detection and resolution
-  5. Comprehensive testing and deployment preparation
+  4. Progressive development with validation at each layer
+  5. Early integration issue detection and resolution
+  6. Comprehensive testing and deployment preparation
   
   Expected result: Fully integrated system without integration hell issues
+  
+  ────────────────────────────────────────────
+  
+  EXAMPLE 2 - Small Iteration:
+  User input: "Add product reviews feature to my e-commerce system"
+  
+  Claude execution:
+  1. Detection: Existing package.json, src/ -> ITERATIVE MODE
+  2. Impact analysis: 2 modules affected (products, new reviews module)
+  3. Decision: < 3 modules -> SIMPLE MODE
+  4. Sequential execution:
+     - Update product model for review references
+     - Create reviews module with rating system
+     - Add review UI components
+  5. Targeted testing on review functionality
+  6. Hot reload deployment
+  
+  Time: 2-3 hours vs 2 days for full workflow
+  
+  ────────────────────────────────────────────
+  
+  EXAMPLE 3 - Large Iteration with Parallelization:
+  User input: "Add multi-vendor marketplace features: vendor accounts, vendor dashboard, commission system, vendor analytics"
+  
+  Claude execution:
+  1. Detection: Existing project -> ITERATIVE MODE
+  2. Impact analysis: 5+ modules affected with complex dependencies
+  3. Decision: ≥ 3 modules with deps -> HYBRID MODE
+  4. Parallel groups identified:
+     Group A (independent): vendor-accounts, vendor-dashboard UI
+     Group B (dependent): commission-system (needs vendor-accounts)
+     Group C (dependent): vendor-analytics (needs all above)
+  5. Execution:
+     - Group A: Parallel development of vendor accounts + dashboard
+     - Validate Group A
+     - Group B: Commission system using validated vendor APIs
+     - Validate Group B
+     - Group C: Analytics integration
+  6. Integration testing across vendor subsystem
+  7. Incremental deployment with feature flags
+  
+  Time saved: 40% through smart parallelization
 
 # Automation Execution Guidelines
 automation_guidelines:
