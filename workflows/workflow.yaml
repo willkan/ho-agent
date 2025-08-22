@@ -1,800 +1,437 @@
 version: "3.0"
-name: "Progressive Integration Development Workflow"
-description: "Unified workflow focusing on solving integration hell through progressive integration"
+name: "Storyline-Driven Progressive Development Workflow"
+description: "Stage-based process with storyline-driven feature development"
 
-# Core Philosophy
-design_principles:
-  - "Progressive integration - solve integration hell at its root"
-  - "Natural language execution - Claude intelligently understands and executes"
-  - "Intelligent problem handling - minimize human supervision"
-  - "Layer-by-layer validation - catch issues early"
-  - "Continuous automation - stages flow automatically without human confirmation"
-  - "Smart validation recovery - always return to complete solution after simple tests"
+# ═══════════════════════════════════════════════════════════════
+#                     CORE PHILOSOPHY
+# ═══════════════════════════════════════════════════════════════
+philosophy: |
+  STAGES = Development Process (HOW we build) - 8 sequential phases
+  STORYLINES = User Features (WHAT we build) - Complete user journeys
+  
+  Each STORYLINE flows through multiple STAGES
+  Each STAGE processes multiple STORYLINES progressively
+  
+  Example: "User Authentication" storyline goes through:
+  Planning → Development → Testing → Integration → Deployment
 
-# Applicability
-applicable_projects:
-  - "Projects with 2+ modules requiring integration"
-  - "Medium to large development projects"
-  - "Any project where module interdependency exists"
+# ═══════════════════════════════════════════════════════════════
+#                  EXECUTION INSTRUCTIONS
+# ═══════════════════════════════════════════════════════════════
+execution_entry: |
+  When user says "按照workflow开发[项目]":
+  
+  1. COORDINATOR ACTIVATION:
+     - READ .claude/agents/coordinator.md for orchestration guidance
+     - Main Claude becomes orchestrator (NOT a subagent)
+     - Use Task tool to delegate to specialist agents
+  
+  2. MODE DETECTION:
+     Check project state using LS and Glob:
+     - No existing code → INITIAL MODE (full 8 stages)
+     - Existing project → ITERATIVE MODE (smart stages)
+  
+  3. AUTOMATIC PROGRESSION:
+     - Stage validated → Next stage automatically
+     - Storyline complete → Next storyline automatically
+     - NO "Should I continue?" questions
 
-non_applicable_projects:
-  - "Single-file or single-module simple tools"
-  - "Pure static pages"
-  - "Simple scripts"
+task_tool_usage: |
+  CRITICAL: How to use Task tool correctly:
+  
+  Task(
+    subagent_type="general-purpose",
+    description="Short task description",
+    prompt="You are a [role]. Read .claude/agents/[role].md for your guidelines.
+            [Specific instructions for this task including storyline context]"
+  )
+  
+  REMEMBER:
+  - Each Task creates isolated context window
+  - Subagents cannot call other subagents (no nested Task)
+  - Include storyline context in every Task prompt
+  - Subagents return results to main Claude
+  
+  PARALLEL EXECUTION:
+  - To execute in parallel: Call multiple Task tools in ONE message
+  - Example: Task(...) Task(...) in the same response
+  - If called in separate messages, they execute sequentially
+  - Claude Code supports batch tool calls in single message
 
-# Unified Workflow Execution Logic
-workflow_execution: |
-  IMPORTANT: This workflow is executed by Claude Code in the target project, not in this framework repository.
-  When a user copies this workflow to their project and asks Claude Code to use it, follow these instructions:
+# ═══════════════════════════════════════════════════════════════
+#              MODE A: INITIAL DEVELOPMENT
+# ═══════════════════════════════════════════════════════════════
+initial_mode:
+  trigger: "No existing project files (no package.json, src/, etc.)"
   
-  Claude, first determine if this is initial development or iterative development:
-  
-  DECISION POINT - Development Mode:
-  1. Check for existing project structure using LS and Glob tools
-  2. If core files exist (package.json, src/, etc.) -> ITERATIVE MODE
-  3. If starting fresh -> INITIAL MODE
-  
-  ═══════════════════════════════════════════════════════════════
-  MODE A: INITIAL DEVELOPMENT (First Time)
-  ═══════════════════════════════════════════════════════════════
-  
-  Claude, this project has multiple modules and needs progressive integration to avoid integration hell:
-
-  Stage 1 - Complete Planning and Design:
-  Execute concurrently:
-  - Task(requirements-analyst, "Analyze user requirements thoroughly, output requirements document")
-  - Task(technical-architect, "Design system architecture with focus on module separation and interface design")
-  - Task(ux-designer, "Design user interface and interaction flows")
-  
-  After planning completion:
-  - Task(project-manager, "Based on architecture design, generate module configuration file including:
-    * All modules list with priorities and dependencies
-    * Layered development plan based on dependency relationships  
-    * Detailed interface definitions and data models")
-  
-  Stage 2 - Progressive Development (CORE! Solves integration hell):
-  
-  Read module configuration file, execute by dependency layers:
-  
-  2.1) Develop Layer 1 modules (foundation modules with no dependencies):
-       For each Layer 1 module, execute concurrently:
-       - If backend_required: Task(backend-developer, "Develop ${module_name} backend, strictly follow interface definitions")
-       - If frontend_required: Task(frontend-developer, "Develop ${module_name} frontend, use mock data for testing")
-  
-  2.2) Layer 1 Validation (CRITICAL STEP!):
-       - Check if module files are completely generated
-       - Verify API interfaces are implemented according to definitions
-       - Run unit tests
-       - Attempt to start services and test basic functionality
-       
-       ❌ If validation fails:
-       - STOP immediately, do NOT proceed to Layer 2
-       - Task(code-reviewer, "Analyze Layer 1 integration issues, provide specific fix solutions")
-       - After fixes, re-validate Layer 1
-       - IMPORTANT: After fixing, automatically re-run validation
-       
-       ✅ If validation passes:
-       - Mark Layer 1 as COMPLETED in state
-       - AUTOMATICALLY proceed to Layer 2 development
-       - NO HUMAN CONFIRMATION NEEDED - continue immediately
-  
-  2.3) Develop Layer 2 modules (dependent on Layer 1):
-       - Develop based on validated Layer 1 interfaces
-       - Task calls explicitly state: "Based on completed ${dependency_modules} interfaces, develop ${current_module}"
-  
-  2.4) Layer 2 Validation:
-       - Run cross-module integration tests
-       - Verify data flow between Layer 1 and Layer 2
-       - Test complete business processes
-       
-       ✅ If validation passes:
-       - AUTOMATICALLY continue to next layer
-       - NO PAUSE for human confirmation
-       - Update progress state and continue
-  
-  Continue this pattern - each layer MUST pass validation before AUTOMATICALLY proceeding to next layer.
-  
-  AUTOMATION RULE: After ANY validation success, immediately continue to next stage WITHOUT asking "Should I continue?" or "Would you like me to proceed?"
-  
-  Stage 3 - Quality Assurance:
-  - Task(qa-engineer, "Comprehensive testing of all features, focus on inter-module integration")
-  - When issues found: Task(code-reviewer, "Analyze problems and provide fix recommendations")
-  - Generate test reports and deployment documentation
-  
-  KEY PRINCIPLE: Validate each layer immediately after completion, catch and fix issues early, 
-  avoid problem accumulation until final integration!
-  
-  ═══════════════════════════════════════════════════════════════
-  MODE B: ITERATIVE DEVELOPMENT (Second+ Time)
-  ═══════════════════════════════════════════════════════════════
-  
-  Claude, this is an iteration on existing project. Use smart strategy based on change scope:
-  
-  Stage 1 - Incremental Analysis:
-  1. Task(requirements-analyst, "Analyze ONLY new requirements, focusing on:
-     * What new features are needed
-     * Which existing modules will be affected
-     * Integration points with current system")
-  
-  2. Impact Assessment (CRITICAL for iteration efficiency):
-     Use Grep and Glob to identify:
-     - How many modules are affected (count)
-     - Dependency relationships between affected modules
-     - Whether changes are isolated or cross-cutting
-     
-     DECISION TREE:
-     ┌─────────────────────────────────┐
-     │  Affected Modules Count?        │
-     └─────────────┬───────────────────┘
-                   ▼
-     ┌──────────────────────────────┐
-     │  < 3 modules: SIMPLE MODE    │──► Sequential modification
-     │  ≥ 3 modules: Check deps     │
-     └─────────────┬────────────────┘
-                   ▼
-     ┌──────────────────────────────┐
-     │  Dependencies exist?         │
-     │  NO:  PARALLEL MODE          │──► All affected modules in parallel
-     │  YES: HYBRID MODE            │──► Independent groups parallel + dependent serial
-     └──────────────────────────────┘
-  
-  Stage 2 - Smart Execution with Regression Integration:
-  
-  CONTRACT-FIRST APPROACH (All modes):
-  Before ANY development:
-  - Define interface changes explicitly
-  - Generate contract tests
-  - Create mock implementations for testing
-  
-  SIMPLE MODE (< 3 modules):
-  - Direct sequential modification of affected modules
-  - No complex orchestration needed
-  - Task(developer, "Modify ${module_name} to add ${feature}")
-  - CRITICAL: After EACH module change, run REGRESSION INTEGRATION tests:
-    * Test the modified module's new features
-    * Test the modified module's existing features (regression)
-    * Test ALL modules that call this module
-    * Test ALL modules that this module calls
-    * Run affected E2E scenarios
-  
-  PARALLEL MODE (≥ 3 modules, no dependencies):
-  WARNING: "No dependencies" must be verified through:
-  - No shared database tables
-  - No shared API calls
-  - No shared state management
-  - No event pub/sub relationships
-  
-  Execute concurrently WITH contract tests:
-  - Task(frontend-developer, "Update ${module1} with contract tests")
-  - Task(backend-developer, "Add ${module2} APIs with contract validation")
-  - Task(backend-developer, "Update ${module3} with integration checks")
-  
-  CRITICAL: Intelligent Parallel Regression Gate:
-  - Each module must pass its own regression tests
-  - Then run cross-module integration tests
-  - If regression fails, apply smart failure handling:
-    * Analyze failure severity and scope
-    * Isolated failure: Fix affected module, others continue
-    * Cross-dependency failure: Coordinate fix between affected modules only
-    * System-wide failure: Only then stop all parallel work
-    * Apply same problem classification as initial development (minor/medium/major)
-  
-  HYBRID MODE (≥ 3 modules with dependencies):
-  2.1) Dependency Impact Analysis FIRST:
-      - Map ALL direct dependencies
-      - Map ALL transitive dependencies
-      - Identify hidden dependencies (DB, cache, events)
+  stages:
+    # ─────────────────────────────────────────────────────────
+    stage_0:
+      name: "Requirements Discovery"
+      type: "conversation"
+      description: "Main Claude conducts dialogue (NOT delegated to agent)"
       
-  2.2) Smart Grouping with Regression Awareness:
-      Group A: Truly independent modules
-      Group B: Modules dependent on Group A
-      Group C: Integration layer modules
-  
-  2.3) Execute Group A with Regression Guards:
-      For each module in parallel:
-      - Task(developer, "Implement ${module} with regression tests")
-      - Individual module regression validation
-      - Cross-group contract validation
-  
-  2.4) Group A Intelligent Regression Gate:
-      - ALL Group A modules must pass individual regression
-      - Run integration tests across Group A
-      - Test downstream impact on Group B modules (read-only)
-      - If regression fails, apply intelligent handling:
-        * Level 1 (minor): Auto-fix and continue
-        * Level 2 (medium): Attempt fix up to 3 times
-        * Level 3 (complex): Generate fix plan, get confirmation
-        * Level 4 (critical): Only then stop and restart from 2.3
-      - If passed or fixed: Proceed to Group B
-  
-  2.5) Execute dependent groups with cascade testing:
-      - Each dependent group must re-validate previous groups
-      - Regression tests accumulate (A → A+B → A+B+C)
-  
-  Stage 3 - Comprehensive Regression Integration Testing:
-  
-  REGRESSION TESTING MATRIX (Mandatory):
-  Level 1 - Module Regression:
-    - Task(qa-engineer, "Test each modified module:
-      * New functionality works correctly
-      * Existing functionality still works (regression)
-      * Performance hasn't degraded")
-  
-  Level 2 - Integration Regression:
-    - Task(qa-engineer, "Test integration points:
-      * Direct API calls between modules
-      * Shared data consistency
-      * Event propagation correctness
-      * Transaction boundaries")
-  
-  Level 3 - System Regression:
-    - Task(qa-engineer, "Test system-wide impacts:
-      * Critical user journeys (login → checkout)
-      * High-frequency operations
-      * Data integrity across modules
-      * Concurrent operation scenarios")
-  
-  Level 4 - Edge Case Regression:
-    - Test boundary conditions that might break
-    - Test error handling paths
-    - Test rollback scenarios
-  
-  INTELLIGENT REGRESSION FAILURE PROTOCOL:
-  When regression test fails:
-  1. ANALYZE first - don't stop immediately:
-     - Determine failure severity (Level 1-4)
-     - Identify impact scope (single module vs system-wide)
-     - Check if it's a test issue vs actual regression
-  
-  2. APPLY SMART HANDLING based on analysis:
-     Level 1 (minor - syntax, imports, formatting):
-       → Auto-fix and re-run immediately
-     Level 2 (medium - interface, types, parameters):
-       → Attempt guided fix (max 3 tries)
-     Level 3 (complex - performance, logic, concurrency):
-       → Generate fix solution, implement with confirmation
-     Level 4 (critical - architecture, security, data corruption):
-       → ONLY NOW stop for human intervention
-  
-  3. VALIDATE FIX appropriately:
-     - For Level 1-2: Re-run affected tests only
-     - For Level 3: Re-run module + integration tests
-     - For Level 4: Re-run ENTIRE regression suite
-  
-  4. CONTINUE OR ESCALATE:
-     - Fixed: Proceed to next stage
-     - Can't fix after 3 attempts: Escalate to next level
-     - Critical issues: Stop and wait for human decision
-  
-  Stage 4 - Incremental Deployment:
-  - No need to rebuild entire Docker/CI/CD
-  - Update only changed components
-  - Hot reload where possible
-  - Task(devops-engineer, "Deploy only modified modules: ${changed_modules_list}")
-  
-  ITERATION OPTIMIZATION RULES:
-  1. NEVER re-analyze entire system architecture
-  2. NEVER rebuild unchanged modules
-  3. NEVER recreate existing test infrastructure
-  4. ALWAYS preserve existing working code
-  5. FOCUS only on the delta (changes)
+      conversation_points:
+        - "What are you building? (purpose)"
+        - "Who are the target users?"
+        - "Core features for MVP?"
+        - "Technical preferences?"
+        - "是面向C端还是B端？需要移动端吗？"
+      
+      exit: "User confirms: 需求清楚了"
+      output: "Requirements understood (kept in context for Stage 1)"
+    
+    # ─────────────────────────────────────────────────────────
+    stage_1:
+      name: "Planning & Storyline Generation"
+      type: "mixed_execution"
+      description: "Architecture design and storyline breakdown"
+      
+      task_execution:
+        1_requirements:
+          agent: "requirements-analyst"
+          action: "Task tool: Analyze requirements and create docs/requirements.md"
+          execution: "FIRST (needed by others)"
+          
+        2_parallel_design:  # MUST run simultaneously
+          execution_instruction: |
+            CRITICAL: Call BOTH Tasks in ONE message:
+            Task(architect...) Task(ux...) 
+            NOT in separate messages!
+            
+          technical_architecture:
+            agent: "technical-architect"
+            action: "Task tool: Design architecture, create docs/architecture.md and docs/api-spec.yaml"
+            
+          ux_design:
+            agent: "ux-designer"
+            action: "Task tool: Create UX design, output docs/ux-design.md and docs/component-specs.md"
+          
+        3_storyline_generation:  # CRITICAL - needs all above
+          agent: "project-manager"
+          action: "Task tool: Generate storyline breakdown with dependency graph"
+          execution: "AFTER parallel_design completes"
+          inputs_needed:
+            - "docs/requirements.md"
+            - "docs/architecture.md"
+            - "docs/ux-design.md"
+          outputs:
+            - ".claude/storylines/storyline-breakdown.json"
+            - ".claude/storylines/*/progress.md for each storyline"
+          details: |
+            - Complete user storylines (e.g., 'user auth', 'shopping cart')
+            - Dependency graph showing priority layers
+            - Time estimates per storyline
+            - ASCII visualization of dependencies
+          
+          example_output: |
+            Priority 1 (Foundation):
+            ├─ User Authentication (3 days)
+            ├─ Product Browsing (2 days)
+            └─ Static Pages (1 day)
+            
+            Priority 2 (Needs P1):
+            ├─ Shopping Cart (2 days)
+            └─ Order Management (2 days)
+            
+            Priority 3 (Needs P2):
+            └─ Checkout Process (3 days)
+      
+      approval_gate:
+        trigger: "After storyline generation"
+        present: "ASCII dependency graph"
+        require: "User approval: 'Storylines look good, proceed'"
+    
+    # ─────────────────────────────────────────────────────────
+    stage_2:
+      name: "Project Setup"
+      type: "initialization"
+      description: "Setup project structure based on architecture"
+      
+      execution:
+        action: "Read architecture.md and initialize accordingly"
+        principle: "Create structure defined in architecture document"
+        scope:
+          - "Directory structure as per architecture"
+          - "Configuration files (package.json, etc.)"
+          - "Empty entry points (no implementation)"
+          - "Database schemas if specified"
+          - "Docker setup if specified"
+      
+      validation: "All components from architecture.md have skeleton structure"
+    
+    # ─────────────────────────────────────────────────────────
+    stage_3:
+      name: "Storyline Development"
+      type: "storyline_driven"
+      description: "Develop storylines layer by layer"
+      
+      execution_pattern: |
+        FOR each priority_layer IN [1, 2, 3]:
+          FOR each storyline IN priority_layer:
+            IF dependencies_satisfied(storyline):
+              develop_storyline(storyline)
+      
+      per_storyline_flow:
+        1_backend:
+          agent: "backend-developer"
+          action: "Task tool: Implement complete backend for {storyline}"
+          includes: "API endpoints, business logic, data models"
+          
+        2_frontend:
+          agent: "frontend-developer"
+          action: "Task tool: Implement complete UI for {storyline}"
+          includes: "All screens, interactions, state management"
+          
+        3_validation:
+          agent: "qa-engineer"
+          action: "Task tool: E2E test entire {storyline} user journey"
+          gate: "Must pass ALL tests before next storyline"
+      
+      progression_rules:
+        - "P1 storylines can run in parallel (no deps)"
+        - "P2 waits for required P1 storylines"
+        - "P3 waits for required P2 storylines"
+        - "Failed validation = fix before continuing"
+    
+    # ─────────────────────────────────────────────────────────
+    stage_4:
+      name: "Integration Testing"
+      type: "validation"
+      activities:
+        - "Test cross-storyline interactions"
+        - "Validate data flow between features"
+        - "Performance testing"
+        - "Security validation"
+    
+    # ─────────────────────────────────────────────────────────
+    stage_5_6_7:
+      name: "Production Preparation"
+      
+      stage_5_integration:
+        - "Final system integration"
+        - "Performance optimization"
+        
+      stage_6_documentation:
+        - "User guides per storyline"
+        - "API documentation"
+        - "Deployment guides"
+        
+      stage_7_deployment:
+        - "Docker containerization"
+        - "CI/CD setup"
+        - "Production config"
 
-# Progressive Integration Core Mechanism
-progressive_integration_solution:
-  problem_root_cause: "Traditional development has modules developed independently, causing massive interface mismatch issues during final integration"
+# ═══════════════════════════════════════════════════════════════
+#              MODE B: ITERATIVE DEVELOPMENT
+# ═══════════════════════════════════════════════════════════════
+iterative_mode:
+  trigger: "Existing project detected (has package.json, src/, etc.)"
   
-  solution_approach: |
-    1. Dependency Analysis:
-       - Automatically analyze inter-module dependency relationships
-       - Organize modules into different layers based on dependencies
-       - Layer 1: Foundation modules with no dependencies
-       - Layer 2: Modules dependent only on Layer 1
-       - Layer 3: Modules dependent on previous layers
+  smart_stages:
+    # ─────────────────────────────────────────────────────────
+    stage_0:
+      name: "Change Requirements"
+      type: "conversation"
+      focus: "What new features or changes needed?"
+      skip: "Don't re-analyze entire system"
     
-    2. Layer-by-Layer Development:
-       - Same-layer modules can be developed concurrently (no dependency conflicts)
-       - Different layers must be developed sequentially
-       - Subsequent layers must wait for previous layer validation
+    # ─────────────────────────────────────────────────────────
+    stage_1:
+      name: "Impact Analysis"
+      type: "smart_analysis"
+      
+      analysis:
+        - "Which existing modules affected?"
+        - "New storylines vs modifications?"
+        - "Dependency impacts?"
+      
+      decision_tree: |
+        IF affected_modules < 3:
+          → SIMPLE MODE (sequential development)
+        ELSE IF affected_modules ≥ 3:
+          IF no_dependencies:
+            → PARALLEL MODE (develop simultaneously)
+          ELSE:
+            → LAYERED MODE (by dependency order)
+      
+      storyline_update:
+        - "Add new storylines to dependency graph"
+        - "Mark modified storylines"
+        - "Keep completed storylines stable"
     
-    3. Layer Validation:
-       After each layer completion, immediately validate:
-       - Are API interfaces implemented according to definitions?
-       - Are data models consistent?
-       - Are module calls functioning properly?
-       - Do integration tests pass?
-       
-       Validation failure = immediate stop for fixes
-       Validation success = proceed to next layer
+    # ─────────────────────────────────────────────────────────
+    stage_2_3:
+      name: "Incremental Development"
+      type: "targeted_changes"
+      
+      principles:
+        - "NEVER rebuild unchanged modules"
+        - "Preserve all working code"
+        - "Add new storylines to appropriate priority layer"
+        - "Run regression tests on affected paths"
+      
+      new_storyline_flow:
+        - "Place in correct priority layer"
+        - "Develop following same per-storyline flow"
+        - "Integrate with existing storylines"
+      
+      modified_storyline_flow:
+        - "Update specific components only"
+        - "Regression test entire storyline"
+        - "Verify downstream storylines still work"
     
-    4. Early Problem Detection:
-       - Interface mismatches discovered during development phase
-       - Data flow issues exposed during single-layer validation
-       - Avoid problem accumulation until final integration
+    # ─────────────────────────────────────────────────────────
+    stage_4_5_6_7:
+      name: "Incremental Integration"
+      
+      optimizations:
+        - "Test only affected storyline paths"
+        - "Update only changed documentation"
+        - "Hot reload where possible"
+        - "Incremental deployment"
 
-# Unified Intelligent Problem Handling (Both Modes)
-unified_failure_classifier:
-  level_1_auto_fix:
-    examples: ["syntax errors", "import path errors", "missing semicolons", "wrong quotes", "indentation"]
-    detection: "AST parsing, linting errors"
-    handling: |
-      - Immediate auto-fix using AST manipulation
-      - No workflow interruption
-      - Fix and continue in < 2 minutes
-    max_time: "2 minutes"
+# ═══════════════════════════════════════════════════════════════
+#                    STORYLINE EXAMPLES
+# ═══════════════════════════════════════════════════════════════
+storyline_structure:
+  definition: |
+    A storyline is a COMPLETE user journey, not technical tasks:
+    ✅ "User browses and purchases products" (full flow)
+    ❌ "Create product API endpoint" (technical fragment)
+  
+  example_storylines:
+    user_authentication:
+      description: "Complete identity management flow"
+      components:
+        - "Registration + email verification"
+        - "Login/logout with sessions"
+        - "Password reset flow"
+        - "Profile management"
+      vertical_slice: "UI + API + Database + Sessions"
+      priority: 1
+      dependencies: []
     
-  level_2_guided_fix:
-    examples: ["interface mismatches", "type conflicts", "parameter mismatches", "missing dependencies", "test assertion failures"]
-    detection: "Type checking, contract validation, test output analysis"
-    handling: |
-      1. Analyze root cause (not just symptoms)
-      2. Generate fix candidates
-      3. Apply most likely fix
-      4. Validate with targeted tests
-      5. Max 3 attempts before escalation
-      6. If test-related: may create temporary validation
-    max_time: "10 minutes"
+    shopping_cart:
+      description: "Product selection and management"
+      components:
+        - "Add/remove items"
+        - "Update quantities"
+        - "Calculate totals"
+        - "Persist across sessions"
+      vertical_slice: "UI + API + State + Storage"
+      priority: 2
+      dependencies: ["product_browsing"]
     
-  level_3_assisted_fix:
-    examples: ["performance regression", "logic errors", "concurrency issues", "complex integration failures", "data inconsistency"]
-    detection: "Performance metrics, integration test failures, data validation"
-    handling: |
-      1. Deep analysis with execution tracing
-      2. Generate detailed fix plan
-      3. Get quick confirmation (or auto-apply if confident)
-      4. Implement fix with careful validation
-      5. May need partial system restart
-    max_time: "30 minutes"
-    
-  level_4_human_required:
-    examples: ["architecture conflicts", "security vulnerabilities", "data corruption", "breaking API changes", "legal/compliance issues"]
-    detection: "Architecture drift detection, security scans, critical test failures"
-    handling: |
-      - Generate comprehensive report
-      - Stop affected work streams only
-      - Other independent work continues
-      - Wait for human decision
-    requires: "human intervention"
+    checkout:
+      description: "Complete purchase flow"
+      components:
+        - "Shipping address"
+        - "Payment processing"
+        - "Order confirmation"
+      vertical_slice: "UI + API + Payment Gateway + Orders"
+      priority: 3
+      dependencies: ["shopping_cart", "user_authentication"]
 
-# Intelligent Problem Handling (Backward Compatibility)
-problem_classification_handling:
-  minor_issues:
-    examples: ["missing files", "syntax errors", "import path errors"]
-    handling: "Claude auto-analyzes and fixes, continues execution WITHOUT PAUSE"
-    maps_to: "level_1_auto_fix"
-    
-  medium_issues:
-    examples: ["interface mismatches", "data type conflicts", "test failures"]
-    handling: |
-      1. Task(senior-developer) deep analysis, attempt automatic fix
-      2. If temporary validation needed (simple-xx, test-xx, minimal-xx, quick-xx, demo-xx, poc-xx, etc.): 
-         - Create temporary/simplified test case
-         - Validate hypothesis
-         - CRITICAL: After ANY temporary validation, MUST return to FULL implementation
-         - Track state: {original_task: "full_implementation", temp_validation: "type_of_test", validation_status: "completed"}
-         - Recognize patterns: simple-*, test-*, minimal-*, quick-*, demo-*, poc-*, temp-*, basic-*
-      3. Continue execution automatically after fix
-    maps_to: "level_2_guided_fix"
-    
-  major_issues:
-    examples: ["architecture design conflicts", "requirement misunderstanding", "technology stack adjustments"]
-    handling: "Generate detailed report, pause for human intervention"
-    maps_to: "level_4_human_required"
-
-  handling_logic: |
-    Claude intelligently handles problems during execution:
-    
-    VALIDATION FILE PROTOCOL:
-    1. Temporary validation files are ALLOWED for debugging
-    2. But MUST follow complete lifecycle:
-       - CREATE temp file and track it
-       - VALIDATE hypothesis
-       - APPLY solution to original file
-       - DELETE temp file
-       - VERIFY original problem is fixed
-    3. FORBIDDEN: Stopping at validation success
-       - simple-server.js works ≠ task complete
-       - Must fix server.js and delete simple-server.js
-       - Track all temp files to ensure cleanup
-    
-    AUTOMATION RULES:
-    1. NEVER ask "Should I continue?" after successful validation
-    2. ALWAYS auto-proceed to next stage when current stage completes
-    3. Direct problem solving - no temporary escapes, no simplified versions
-    4. Remember: "The only way out is through" - fix problems where they are
-    
-    Goal: Direct problem resolution with minimal human intervention
-
-# Coordinator Execution Instructions
-coordinator_instructions:
-  mode_detection: |
-    Claude, FIRST determine the development mode:
-    
-    1. Use LS and Glob tools to check for project indicators:
-       - Look for: package.json, src/, .git/, go.mod, requirements.txt, etc.
-       - If found -> ITERATIVE MODE
-       - If not found -> INITIAL MODE
-    
-    2. Store the detected mode in your context for the entire session
-    
-    3. Apply the appropriate workflow based on detected mode
-  
-  status_management: |
-    Claude, when coordinating the workflow:
-    
-    1. For INITIAL MODE:
-       - Create necessary directories for state tracking
-       - Execute full workflow from Stage 1
-       - Set up complete project structure
-    
-    2. For ITERATIVE MODE:
-       - Preserve all existing structure
-       - Skip redundant stages (architecture, DevOps setup)
-       - Focus on impact analysis and targeted changes
-    
-    3. Track current progress:
-       - Maintain awareness of current stage in your context
-       - Record completion of each stage
-       - Automatically determine and proceed to next stage without asking user
-  
-  validation_approach: |
-    Claude, validate each stage by:
-    
-    1. Structure validation:
-       - Use LS tool to check if expected directories exist
-       - Use Glob tool to verify files are generated
-       - Ensure module organization matches architecture
-    
-    2. Code validation:
-       - Count generated files to ensure completeness
-       - Verify all required components are present
-    
-    3. Test validation:
-       - Use Bash tool to run tests if available
-       - If tests fail, analyze errors and fix automatically
-       - Continue workflow after fixing - do not pause to ask user
-    
-    4. Automatic progression:
-       - When validation passes, immediately proceed to next stage
-       - Do not ask "Should I continue?" or similar questions
-  
-  problem_detection_strategy: |
-    Claude, detect and handle problems automatically:
-    
-    1. Check for common issues:
-       - Use LS and Glob tools to verify expected structure
-       - Check if core files like package.json exist
-       - Ensure sufficient code has been generated
-    
-    2. Issue resolution by severity:
-       - Minor issues: Fix immediately and continue without pause
-       - Medium issues: May create temporary test to validate fix, but MUST return to full implementation
-       - Major issues: Only these require human intervention
-    
-    3. Validation success behavior:
-       - When validation passes, state "Validation passed, proceeding to next stage"
-       - Immediately continue without asking for permission
-       - Track that this stage is complete and move forward
-
-# Configuration Templates
-config_templates:
-  medium_project_example: |
-    {
-      "project_type": "medium",
-      "modules": [
-        {
-          "name": "user-authentication",
-          "priority": 1,
-          "dependencies": [],
-          "backend_required": true,
-          "frontend_required": true,
-          "description": "User login and registration functionality"
-        },
-        {
-          "name": "core-business",
-          "priority": 2,
-          "dependencies": ["user-authentication"],
-          "backend_required": true,
-          "frontend_required": true,
-          "description": "Main business functionality"
-        },
-        {
-          "name": "admin-dashboard",
-          "priority": 3,
-          "dependencies": ["user-authentication", "core-business"],
-          "backend_required": false,
-          "frontend_required": true,
-          "description": "Administrative interface"
-        }
-      ],
-      "development_layers": {
-        "layer_1": ["user-authentication"],
-        "layer_2": ["core-business"],
-        "layer_3": ["admin-dashboard"]
-      }
-    }
-
-# Anti-Pattern Prevention for Iterations
-iteration_anti_patterns:
-  integration_hell_prevention:
-    description: "Prevent late integration failures in iterative development"
-    strategies:
-      - "Contract-first development for ALL changes"
-      - "Continuous integration testing during development, not after"
-      - "Parallel work requires proven independence verification"
-      - "Regression gates at EVERY stage transition"
-    
-    warning_signs:
-      - "Modules developed for >2 hours without integration test"
-      - "Parallel development without contract definition"
-      - "Skipping regression tests to 'save time'"
-      - "Testing only new features, not existing ones"
-  
-  deceptive_success_prevention:
-    description: "Prevent false positives that hide real issues"
-    strategies:
-      - "Never trust unit tests alone - always integration test"
-      - "Test the absence (what should NOT happen)"
-      - "Test downstream impacts, not just direct changes"
-      - "Regression tests are mandatory, not optional"
-    
-    validation_checklist:
-      - "Did you test what WASN'T supposed to change?"
-      - "Did you test modules that DEPEND on this one?"
-      - "Did you test with production-like data volumes?"
-      - "Did you test error scenarios, not just happy paths?"
-  
-  regression_integration_focus:
-    description: "Regression is MORE important than new features"
-    principles:
-      - "Breaking existing features is worse than not adding new ones"
-      - "Every change is guilty until proven innocent"
-      - "Test the unchanged to ensure it stays unchanged"
-      - "Integration regression > unit regression"
-    
-    mandatory_regression_points:
-      - "After EVERY module modification"
-      - "Before merging parallel work"
-      - "Before declaring stage complete"
-      - "Before any deployment"
-
-# Iteration Development Configurations
-iteration_development:
-  detection_patterns:
-    existing_project_indicators:
-      - "package.json"
-      - "src/"
-      - ".git/"
-      - "node_modules/"
-      - "requirements.txt"
-      - "go.mod"
-      - "Cargo.toml"
-  
-  module_impact_thresholds:
-    simple: 2     # < 3 modules: use simple sequential
-    medium: 5     # 3-5 modules: consider dependencies
-    complex: 999  # > 5 modules: always use hybrid approach
-  
-  optimization_strategies:
-    skip_in_iteration:
-      - "Full architecture redesign"
-      - "Complete UI/UX mockups"
-      - "DevOps infrastructure setup"
-      - "Project initialization"
-      - "Technology stack selection"
-    
-    reuse_from_existing:
-      - "Authentication system"
-      - "Database schemas"
-      - "API contracts"
-      - "Test infrastructure"
-      - "CI/CD pipelines"
-    
-    focus_areas:
-      - "New feature implementation"
-      - "Affected module updates"
-      - "Integration point modifications"
-      - "Regression test coverage"
-      - "Incremental deployment"
-
-# Usage Instructions
-usage_guide: |
-  INITIAL DEVELOPMENT Usage:
-  
-  User: "Help me develop a blog system with article publishing, user management, and comment functionality"
-  
-  Claude automatically executes:
-  1. Detects no existing project -> INITIAL MODE
-  2. Full planning: requirements, architecture, UI/UX design
-  3. Progressive development by dependency layers:
-     Layer 1: User management module
-     Layer 2: Article publishing module (depends on user management)
-     Layer 3: Comment functionality module (depends on previous two)
-  4. Validate each layer immediately after completion, catch issues early
-  5. Complete quality assurance and deployment setup
-  
-  ────────────────────────────────────────────
-  
-  ITERATIVE DEVELOPMENT Usage:
-  
-  User: "Add a newsletter subscription feature to my existing blog system"
-  
-  Claude automatically executes:
-  1. Detects existing project structure -> ITERATIVE MODE
-  2. Incremental analysis: only newsletter requirements
-  3. Impact assessment: 2 modules affected (user + new newsletter module)
-  4. Decision: < 3 modules -> SIMPLE MODE
-  5. Sequential implementation:
-     - Update user model for subscription preferences
-     - Create newsletter module
-     - Integration testing
-  6. Regression tests on affected areas only
-  7. Incremental deployment of changes
-  
-  Time saved: 60-70% compared to full workflow
-  
-  Key Advantages:
-  ✅ Smart mode selection - Automatically chooses optimal approach
-  ✅ Avoid redundant work - Skip unnecessary stages in iterations
-  ✅ Efficient parallelization - When beneficial, not always
-  ✅ Preserve existing work - Never break what's already working
-  ✅ Actually executable - Designed based on Claude Code's real capabilities
-
-# Relationship with Original Workflow
-inherits_from_original:
-  - "Retain your excellent agent definitions"
-  - "Retain enterprise-level quality control concepts"
-  - "Retain multi-agent collaboration mechanisms"
-  
-improvements:
-  - "Simplified to unified process, avoiding complexity selection"
-  - "Strengthened progressive integration mechanism"
-  - "Optimized for natural language execution"
-  - "Enhanced intelligent problem handling capabilities"
-
-# Quick Start Examples
-quick_start: |
-  EXAMPLE 1 - Initial Development:
-  User input: "I want to build an e-commerce system with product catalog, shopping cart, user accounts, and payment processing"
-  
-  Claude execution:
-  1. Detection: No existing project files -> INITIAL MODE
-  2. Full analysis: 4 modules identified with clear dependencies
-  3. Layer planning:
-     - Layer 1: user-accounts (no dependencies)
-     - Layer 2: product-catalog (minimal user dependency)
-     - Layer 3: shopping-cart (depends on users + products)
-     - Layer 4: payment-processing (depends on all previous)
-  4. Progressive development with validation at each layer
-  5. Early integration issue detection and resolution
-  6. Comprehensive testing and deployment preparation
-  
-  Expected result: Fully integrated system without integration hell issues
-  
-  ────────────────────────────────────────────
-  
-  EXAMPLE 2 - Small Iteration:
-  User input: "Add product reviews feature to my e-commerce system"
-  
-  Claude execution:
-  1. Detection: Existing package.json, src/ -> ITERATIVE MODE
-  2. Impact analysis: 2 modules affected (products, new reviews module)
-  3. Decision: < 3 modules -> SIMPLE MODE
-  4. Sequential execution:
-     - Update product model for review references
-     - Create reviews module with rating system
-     - Add review UI components
-  5. Targeted testing on review functionality
-  6. Hot reload deployment
-  
-  Time: 2-3 hours vs 2 days for full workflow
-  
-  ────────────────────────────────────────────
-  
-  EXAMPLE 3 - Large Iteration with Parallelization:
-  User input: "Add multi-vendor marketplace features: vendor accounts, vendor dashboard, commission system, vendor analytics"
-  
-  Claude execution:
-  1. Detection: Existing project -> ITERATIVE MODE
-  2. Impact analysis: 5+ modules affected with complex dependencies
-  3. Decision: ≥ 3 modules with deps -> HYBRID MODE
-  4. Parallel groups identified:
-     Group A (independent): vendor-accounts, vendor-dashboard UI
-     Group B (dependent): commission-system (needs vendor-accounts)
-     Group C (dependent): vendor-analytics (needs all above)
-  5. Execution:
-     - Group A: Parallel development of vendor accounts + dashboard
-     - Validate Group A
-     - Group B: Commission system using validated vendor APIs
-     - Validate Group B
-     - Group C: Analytics integration
-  6. Integration testing across vendor subsystem
-  7. Incremental deployment with feature flags
-  
-  Time saved: 40% through smart parallelization
-
-# Automation Execution Guidelines
-automation_guidelines:
+# ═══════════════════════════════════════════════════════════════
+#                   AUTOMATION RULES
+# ═══════════════════════════════════════════════════════════════
+automation:
   continuous_flow:
-    description: "Ensure continuous workflow without unnecessary pauses"
-    rules:
-      - "After any stage validation passes, IMMEDIATELY continue to next stage"
-      - "Do NOT ask 'Should I continue?' or 'Would you like me to proceed?'"
-      - "Only pause for: architecture approval, deployment approval, major failures"
-      - "Minor and medium issues should be fixed and execution continued automatically"
+    - "Stage complete → Next stage automatically"
+    - "Storyline validated → Next storyline automatically"
+    - "NO 'Should I continue?' or 'Would you like me to proceed?'"
+    - "Only pause for: Requirements, Storyline approval, Deployment"
   
   validation_recovery:
-    description: "Proper handling of temporary validation tests (ANY pattern)"
-    process: |
-      When encountering issues requiring validation:
-      1. Create temporary test case for hypothesis validation
-         Common patterns: simple-*, test-*, minimal-*, quick-*, demo-*, poc-*, temp-*, basic-*
-      2. Run the temporary test to verify assumptions
-      3. CRITICAL: After validation, MUST return to full implementation
-      4. Track state to ensure return to original task:
-         {
-           "original_task": "full_user_management_system",
-           "validation_test": "minimal-auth-test",  // could be any pattern
-           "is_temporary": true,
-           "validation_result": "passed",
-           "next_action": "implement_full_solution"
-         }
-      5. Never consider ANY temporary/simplified test as the final solution
-      6. Always complete the original full implementation
-      
-      Pattern detection regex: /^(simple|test|minimal|quick|demo|poc|temp|basic)[-_]/
-    
-    common_mistakes_to_avoid:
-      - "Forgetting to return to full implementation after temporary test"
-      - "Treating ANY temporary validation (simple-xx, test-xx, minimal-xx, etc.) as task completion"
-      - "Losing track of original requirements during validation"
-      - "Not recognizing temporary test patterns beyond simple-xx"
-      - "Stopping at poc/demo/test implementation instead of full solution"
+    temporary_test_patterns: ["simple-*", "test-*", "minimal-*", "poc-*"]
+    protocol: |
+      1. Create temp validation file
+      2. Test hypothesis
+      3. Apply fix to ORIGINAL code
+      4. DELETE temp file
+      5. Continue with full implementation
+    warning: "Never stop at temporary test success"
   
-  human_intervention_minimization:
-    mandatory_only:
-      - "Project requirements approval (initial only)"
-      - "Major architecture changes (breaking changes)"
-      - "Production deployment approval"
-    
-    auto_handled:
-      - "Stage transitions after validation"
-      - "Minor bug fixes and adjustments"
-      - "Module integration after successful tests"
-      - "Documentation updates"
-      - "Test execution and re-runs"
-    
-    decision_tree: |
-      Is validation successful?
-        YES -> Continue to next stage automatically
-        NO -> Is it a minor issue?
-          YES -> Fix and continue automatically
-          NO -> Is it a medium issue?
-            YES -> Analyze, fix, validate, continue automatically
-            NO -> Is it a major architectural issue?
-              YES -> Stop and request human intervention
-              NO -> Attempt intelligent resolution and continue
+  problem_handling:
+    minor: "Auto-fix and continue (syntax, imports)"
+    medium: "Analyze, fix, retry up to 3 times"
+    major: "Generate report, need human help"
 
-# State Tracking for Automation
-state_tracking:
-  required_state_files:
-    - ".claude/state/current_stage.json"
-    - ".claude/state/validation_history.json"
-    - ".claude/state/original_tasks.json"
+# ═══════════════════════════════════════════════════════════════
+#                    STATE TRACKING
+# ═══════════════════════════════════════════════════════════════
+state_management:
+  storyline_tracking:
+    directory: ".claude/storylines/{storyline_id}/"
+    files:
+      - "progress.md - Component completion status"
+      - "tests.md - Test results"
+      - "dependencies.json - Upstream/downstream storylines"
   
-  state_tracking_guidelines: |
-    Claude, maintain state awareness throughout execution:
-    
-    1. After completing each stage:
-       - Remember what stage was just completed
-       - Identify the next stage to execute
-       - Proceed to next stage automatically
-    
-    2. When creating temporary validations:
-       - Recognize patterns: simple-*, test-*, minimal-*, quick-*, demo-*, poc-*, temp-*, basic-*
-       - Remember this is temporary and track the original full task
-       - After validation succeeds, ALWAYS return to implement the full solution
-    
-    3. Before considering any task complete:
-       - Verify you've implemented the full original requirements
-       - Ensure you're not stopping at a temporary validation
-       - Check that all originally requested features are present
+  stage_tracking:
+    current: "Track in conversation context"
+    completed: "List of completed stages"
+    next: "Automatically determined from current"
+  
+  progress_visibility: |
+    After each storyline component:
+    - Update progress file
+    - Show completion percentage
+    - List remaining work
+
+# ═══════════════════════════════════════════════════════════════
+#                   QUICK REFERENCE
+# ═══════════════════════════════════════════════════════════════
+quick_guide: |
+  INITIAL PROJECT EXAMPLE:
+  User: "按照workflow开发[项目]"
+  
+  Claude executes:
+  Stage 0: Conversation to understand requirements
+  
+  Stage 1: [Generate plans and storylines]
+          → Task(requirements-analyst): Create requirements doc
+          → Task(architect) + Task(ux): Parallel design docs
+          → Task(project-manager): Generate storyline breakdown
+            (Will create priority layers based on dependencies)
+  User: Reviews storylines → "Proceed"
+  
+  Stage 2-3: [For each storyline]
+            → Task(backend-dev): API implementation
+            → Task(frontend-dev): UI implementation
+            → Task(qa): E2E testing
+            Auto-progress: P1 complete → Start P2
+  
+  Stage 4-7: Integration → Docs → Deploy
+  
+  ─────────────────────────────────────
+  
+  ITERATIVE PROJECT EXAMPLE:
+  User: "添加[新功能]到现有系统"
+  
+  Claude executes:
+  Detect: Has package.json → ITERATIVE MODE
+  
+  Stage 0: Understand new requirements
+  
+  Stage 1: Impact analysis:
+          - Identify affected modules
+          - Determine integration points
+          - Add new storyline to appropriate layer
+  
+  Stage 2-3: Incremental development
+            - Implement new functionality
+            - Test integration
+            - Regression testing
+  
+  Stage 4-7: Incremental deploy only
+  
+  ─────────────────────────────────────
+  
+  KEY SUCCESS FACTORS:
+  • Coordinator reads guidance, not invoked as subagent
+  • Each storyline = complete user journey
+  • Task tool creates isolated contexts
+  • Automatic progression after validation
+  • Track progress in .claude/storylines/

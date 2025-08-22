@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This is a **Human-Orchestrated Multi-Agent Development Framework** - an advanced collaborative system for AI-assisted software development. The repository contains configuration files and agent specifications for orchestrating multiple AI agents in a controlled development workflow.
+This is a **Storyline-Driven Multi-Agent Development Framework** - an advanced collaborative system for AI-assisted software development that breaks down projects into user storylines (complete user journeys) rather than technical tasks. The repository contains configuration files and agent specifications for orchestrating multiple AI agents to develop software through progressive integration of storylines.
 
 ## Core Architecture
 
@@ -21,11 +21,12 @@ This is a **Human-Orchestrated Multi-Agent Development Framework** - an advanced
 - **Documentation Writer**: Maintains technical documentation
 - **Code Reviewer**: Reviews code quality and architecture compliance
 
-### Execution Model
-The framework operates in progressive phases:
-1. **Single Developer Enhancement**: AI assists with analysis, human does development
-2. **Front-Back Separation**: AI handles frontend and backend separately, sequential execution
-3. **Full Controlled Collaboration**: All agents with controlled parallelism (max 2 concurrent writers)
+### Storyline-Based Execution Model
+The framework operates through storyline-driven progressive integration:
+1. **Storyline Breakdown**: Projects divided into complete user journeys (e.g., "user registration", "product purchase")
+2. **Dependency Mapping**: Storylines organized in priority layers based on dependencies
+3. **Progressive Integration**: Bottom-up development from foundation storylines to complex features
+4. **Vertical Slices**: Each storyline implemented as complete stack (UI + API + Data)
 
 ### Quality Validation System
 Multi-layer validation framework:
@@ -37,22 +38,23 @@ Multi-layer validation framework:
 ## Key Configuration Files
 
 ### Workflow Configuration (`workflow.yaml`)
-- Defines 8-stage development process from planning to deployment
-- Specifies agent roles, dependencies, and quality gates
-- Configures controlled parallel execution with conflict resolution
-- Sets up human intervention points for critical decisions
+- Defines 8-stage development process with storyline-driven approach
+- Stage 0: Requirements clarification through conversation
+- Stage 1: Planning with storyline breakdown and dependency graph generation
+- Human approval gate for storyline breakdown before development
+- Progressive integration from foundation to top-layer storylines
+- Automatic progression between validated storylines
 
-### Quality Rules (`quality-rules.yaml`)  
-- Multi-dimensional quality validation (functional, technical, UX, process)
-- Progressive quality gates with blocking/warning conditions
-- Automated tool configurations (ESLint, Jest, Playwright)
-- Trend analysis and predictive quality scoring
+### Quality Standards
+- Multi-dimensional quality validation at each stage
+- Progressive quality gates with validation points
+- Automated testing expected (unit, integration, e2e)
+- Code review before integration
 
-### Human Intervention (`human-intervention.yaml`)
-- Mandatory intervention points: requirements approval, architecture changes, deployment
-- Recommended interventions: quality issues, performance degradation  
-- Escalation procedures and timeout management
-- Learning framework for improving intervention decisions
+### Human Intervention Points
+- Mandatory: Storyline approval after Stage 1
+- Mandatory: Production deployment decision
+- Recommended: Architecture changes, quality issues
 
 ## Default Technology Stack
 
@@ -115,12 +117,38 @@ The coordinator agent handles:
 
 ## Best Practices for Claude Code
 
-1. **Follow the Progressive Phase Model**: Start with single-developer enhancement before moving to full collaboration
-2. **Respect Quality Gates**: Don't bypass validation layers - they prevent production issues
-3. **Use the Coordinator**: For complex multi-step tasks, leverage the coordinator agent for orchestration
-4. **Honor Human Intervention**: Pause for human approval at mandatory intervention points
-5. **Maintain Architecture Compliance**: Monitor drift scores and escalate significant deviations
-6. **Document Decisions**: All architectural and design decisions should be captured for future agents
+1. **Think in Storylines**: Break down projects by user journeys, not technical components
+2. **Progressive Integration**: Develop foundation storylines first, then build layers on top
+3. **Complete Vertical Slices**: Each storyline should span the full stack (UI + API + Data)
+4. **Honor Approval Gates**: Always get human approval for storyline breakdown before development
+5. **Automatic Progression**: Once a storyline is validated, automatically proceed to the next
+6. **Use Coordinator Guidance**: Main Claude reads coordinator.md for orchestration (not a subagent)
+
+## Storyline Development Philosophy
+
+### What is a Storyline?
+A storyline is a **complete user journey** through the system, not a collection of technical tasks:
+- ✅ "User browses products and makes a purchase" (complete flow)
+- ✅ "User manages their profile and preferences" (full feature)
+- ❌ "Create product API endpoint" (technical fragment)
+- ❌ "Set up database tables" (infrastructure task)
+
+### Storyline Layers
+```
+Priority 1: Foundation (no dependencies)
+  └─ User Auth, Product Browse, Static Pages
+Priority 2: Integration (depends on P1)
+  └─ Shopping Cart, Order Management
+Priority 3: Top Features (depends on P2)
+  └─ Checkout, Payment Processing
+```
+
+### Benefits of Storyline-Driven Development
+- **User Value First**: Each storyline delivers complete user value
+- **No Integration Hell**: Progressive integration catches issues early
+- **Parallel Development**: Independent storylines can be developed simultaneously
+- **Clear Dependencies**: Visual dependency graph shows what can be built when
+- **Incremental Delivery**: Working features delivered layer by layer
 
 ## State Management
 
@@ -129,5 +157,6 @@ The framework maintains shared state in `.claude/state/project.db` with tables f
 - File locks and operation types  
 - Task dependencies and blocking reasons
 - Quality metrics and thresholds
+- Storyline completion status and dependencies
 
 This enables coordinated work across multiple AI agents while preventing conflicts and ensuring quality standards.

@@ -58,13 +58,27 @@ cp "$FRAMEWORK_PATH/agents/"*.md .claude/agents/
 # 4. 创建项目的CLAUDE.md（包含自动化规则）
 echo "📝 创建CLAUDE.md..."
 cat > CLAUDE.md << 'EOF'
-# CLAUDE.md
+# CLAUDE.md - HO-Agent Workflow Configuration
 
-This file provides guidance to Claude Code when working with this project.
+This project uses the HO-Agent role-based development methodology.
 
-## Multi-Agent Development Framework
+## 🚀 WORKFLOW ACTIVATION
 
-This project uses a sophisticated multi-agent development framework located in `.claude/` directory.
+When user says "按照workflow开发[项目]":
+
+1. **READ** `.claude/agents/coordinator.md` for orchestration instructions
+2. **BECOME** the coordinator (don't use Task for coordinator)
+3. **USE Task tool** to delegate work to specialist subagents
+4. **Each subagent** completes its task in isolated context
+5. **YOU orchestrate** the progression through all stages
+
+## 🎭 SUBAGENT-BASED DEVELOPMENT
+
+This framework uses a hybrid approach:
+- **Coordinator**: Instructions for main Claude (NOT a subagent)
+- **Specialists**: Proper subagents invoked via Task tool
+- **Orchestration**: Main Claude reads coordinator.md and delegates to subagents
+- **Isolation**: Each subagent runs in its own context window
 
 ## 🚨 CRITICAL RULES FOR THIS PROJECT
 
@@ -106,44 +120,65 @@ This project uses a sophisticated multi-agent development framework located in `
 ✅ All tests pass → PROCEED to deployment prep without asking
 ```
 
-## Available Agents
+## COMMAND SYSTEM
 
-Located in `.claude/agents/`:
-- **coordinator** - Central task orchestration and conflict resolution
-- **requirements-analyst** - Requirements elicitation and documentation
-- **technical-architect** - System design and architecture
-- **frontend-developer** - React/TypeScript UI development
-- **backend-developer** - Node.js/Fastify API development
-- **qa-engineer** - Quality validation and testing
-- **devops-engineer** - Infrastructure and deployment
-- **ux-designer** - User interface and experience design
-- **project-manager** - Planning and resource management
-- **documentation-writer** - Technical documentation
-- **code-reviewer** - Code quality and best practices
+All workflow commands start with `*` (asterisk):
+- `*help` - Show available commands
+- `*start` - Begin requirements clarification
+- `*agent [name]` - Switch to a specific role
+- `*status` - Show current progress
+- `*next` - Proceed to next stage
 
-## Workflow Configuration
+## HOW IT WORKS
 
-The development workflow is defined in `.claude/workflows/workflow.yaml` with:
-- 8-stage progressive development process
-- Automatic quality gates and validation
-- Layer-by-layer integration to prevent integration hell
-- Smart problem classification and handling
+1. **Main Claude as Orchestrator**: You read coordinator.md and act as orchestrator
+2. **Task Tool for Delegation**: Use Task tool to invoke specialist subagents  
+3. **Automatic Progression**: Workflow advances through stages without manual intervention
+4. **Isolation**: Each subagent completes work in its own context, returns results
+5. **No Direct Coding**: Orchestrator only delegates, never writes code directly
 
-## Usage Examples
+## EXAMPLE WORKFLOW EXECUTION
 
-### Start a new feature:
 ```
-请 coordinator agent 管理用户认证系统的完整开发流程
-```
+User: 按照workflow开发电商平台
 
-### Quick development:
-```
-请 technical-architect 设计API结构，然后 backend-developer 实现
-```
+Claude: [Reads .claude/agents/coordinator.md for instructions]
 
-### Full project:
-```
-使用multi-agent框架开发一个电商网站，包含商品展示、购物车、订单管理
+🎭 HO-Agent Workflow Orchestrator activated!
+
+📊 8-Stage Development Plan:
+Stage 0: Requirements Analysis ⏳
+Stage 1: Architecture Design
+Stage 2: Project Setup  
+Stage 3: Core Development
+Stage 4: Testing
+Stage 5: Integration
+Stage 6: Documentation
+Stage 7: Deployment
+
+📋 Delegating Stage 0 to requirements-analyst...
+
+[Main Claude uses Task tool]:
+Task(
+  subagent_type="general-purpose",
+  description="Gather requirements", 
+  prompt="You are a requirements analyst. Read .claude/agents/requirements-analyst.md and gather requirements for an e-commerce platform. Focus on understanding user needs, core features, and technical constraints."
+)
+
+[Requirements Analyst completes and returns results]
+
+Claude: ✅ Stage 0 Complete! Requirements documented.
+
+📋 Delegating Stage 1 to technical-architect...
+
+[Main Claude uses Task tool]:
+Task(
+  subagent_type="general-purpose",
+  description="Design architecture",
+  prompt="You are a technical architect. Read .claude/agents/technical-architect.md and design the system architecture based on these requirements: [includes requirements from Stage 0]"
+)
+
+[Process continues with main Claude orchestrating all stages]
 ```
 
 ## Project-Specific Configuration
@@ -152,10 +187,11 @@ The development workflow is defined in `.claude/workflows/workflow.yaml` with:
 
 ## Remember
 
-1. This is an automated workflow - minimize human intervention
-2. Always complete the full scope, not just validation tests
-3. Progress through stages automatically when validation passes
-4. Track state to maintain context across the entire development cycle
+1. YOU play ALL the roles - there are no separate agents to call
+2. Read each role's definition before adopting that perspective
+3. Announce role switches clearly
+4. Follow each role's constraints and best practices
+5. Progress through stages systematically
 EOF
 
 # 5. 创建状态跟踪示例
@@ -216,9 +252,10 @@ echo "📄 已创建文件:"
 echo "   CLAUDE.md          (包含自动化规则)"
 echo ""
 echo "🚀 使用方法:"
-echo "   1. 在Claude Code中打开项目: $PROJECT_ROOT"
-echo "   2. Claude Code会自动读取CLAUDE.md并应用规则"
-echo "   3. 开始使用: '请coordinator agent管理[你的需求]'"
+echo "   1. 在项目目录中: cd $PROJECT_ROOT"
+echo "   2. 启动Claude: claude"
+echo "   3. 开始使用: '按照workflow开发[你的项目]'"
+echo "   4. Claude会先与你讨论需求，然后开始multi-agent开发"
 echo ""
 echo "⚠️  重要提醒:"
 echo "   - 临时验证文件必须完成5步生命周期"
