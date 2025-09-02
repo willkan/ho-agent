@@ -55,9 +55,28 @@ cp -r "$FRAMEWORK_PATH/workflows/"* .claude/workflows/
 echo "🤖 复制agent配置..."
 cp "$FRAMEWORK_PATH/agents/"*.md .claude/agents/
 
-# 4. 创建项目的CLAUDE.md（包含自动化规则）
-echo "📝 创建CLAUDE.md..."
-cat > CLAUDE.md << 'EOF'
+# 4. 处理CLAUDE.md配置
+echo "📝 检查CLAUDE.md配置..."
+
+# 检查CLAUDE.md是否存在
+if [ -f "CLAUDE.md" ]; then
+    echo "   ✅ CLAUDE.md已存在，保留现有配置"
+    echo ""
+    echo "   ⚠️  请手动将以下内容添加到你的CLAUDE.md中："
+    echo "   ----------------------------------------"
+else
+    echo "   ℹ️  CLAUDE.md不存在"
+    echo ""
+    echo "   📋 请复制以下prompt并在Claude中执行来创建CLAUDE.md："
+    echo "   ----------------------------------------"
+fi
+
+# 生成用户需要复制的prompt内容
+cat << 'PROMPT_END'
+
+请在项目根目录创建或更新CLAUDE.md文件，添加以下HO-Agent工作流配置：
+
+```markdown
 # CLAUDE.md - HO-Agent Workflow Configuration
 
 This project uses the HO-Agent role-based development methodology.
@@ -113,12 +132,10 @@ This framework uses a hybrid approach:
 - **Remember**: "Validation is the process, not the result"
 
 ### 4. Correct Execution Flow
-```
 ✅ Stage complete → validation passed → IMMEDIATELY start next stage
 ✅ Issue found → create temporary test → validate → RETURN to full implementation
 ✅ Module validated → AUTOMATICALLY integrate with next module
 ✅ All tests pass → PROCEED to deployment prep without asking
-```
 
 ## COMMAND SYSTEM
 
@@ -137,62 +154,15 @@ All workflow commands start with `*` (asterisk):
 4. **Isolation**: Each subagent completes work in its own context, returns results
 5. **No Direct Coding**: Orchestrator only delegates, never writes code directly
 
-## EXAMPLE WORKFLOW EXECUTION
-
-```
-User: 按照workflow开发电商平台
-
-Claude: [Reads .claude/agents/coordinator.md for instructions]
-
-🎭 HO-Agent Workflow Orchestrator activated!
-
-📊 8-Stage Development Plan:
-Stage 0: Requirements Analysis ⏳
-Stage 1: Architecture Design
-Stage 2: Project Setup  
-Stage 3: Core Development
-Stage 4: Testing
-Stage 5: Integration
-Stage 6: Documentation
-Stage 7: Deployment
-
-📋 Delegating Stage 0 to requirements-analyst...
-
-[Main Claude uses Task tool]:
-Task(
-  subagent_type="general-purpose",
-  description="Gather requirements", 
-  prompt="You are a requirements analyst. Read .claude/agents/requirements-analyst.md and gather requirements for an e-commerce platform. Focus on understanding user needs, core features, and technical constraints."
-)
-
-[Requirements Analyst completes and returns results]
-
-Claude: ✅ Stage 0 Complete! Requirements documented.
-
-📋 Delegating Stage 1 to technical-architect...
-
-[Main Claude uses Task tool]:
-Task(
-  subagent_type="general-purpose",
-  description="Design architecture",
-  prompt="You are a technical architect. Read .claude/agents/technical-architect.md and design the system architecture based on these requirements: [includes requirements from Stage 0]"
-)
-
-[Process continues with main Claude orchestrating all stages]
-```
-
 ## Project-Specific Configuration
 
 [Add any project-specific instructions here]
+```
 
-## Remember
+PROMPT_END
 
-1. YOU play ALL the roles - there are no separate agents to call
-2. Read each role's definition before adopting that perspective
-3. Announce role switches clearly
-4. Follow each role's constraints and best practices
-5. Progress through stages systematically
-EOF
+echo "   ----------------------------------------"
+echo ""
 
 # 5. 创建状态跟踪示例
 echo "📊 初始化状态跟踪..."
@@ -248,16 +218,26 @@ echo "   ├── agents/         (11个AI agents)"
 echo "   ├── workflows/      (工作流配置)"
 echo "   └── state/          (状态跟踪)"
 echo ""
-echo "📄 已创建文件:"
-echo "   CLAUDE.md          (包含自动化规则)"
+
+# 根据CLAUDE.md是否存在显示不同的提示
+if [ -f "CLAUDE.md" ]; then
+    echo "📄 配置状态:"
+    echo "   CLAUDE.md已存在 - 请手动添加上述HO-Agent配置"
+else
+    echo "📄 待完成步骤:"
+    echo "   需要创建CLAUDE.md - 请复制上述prompt到Claude中执行"
+fi
+
 echo ""
 echo "🚀 使用方法:"
-echo "   1. 在项目目录中: cd $PROJECT_ROOT"
-echo "   2. 启动Claude: claude"
-echo "   3. 开始使用: '按照workflow开发[你的项目]'"
-echo "   4. Claude会先与你讨论需求，然后开始multi-agent开发"
+echo "   1. 确保CLAUDE.md包含HO-Agent工作流配置"
+echo "   2. 在项目目录中: cd $PROJECT_ROOT"
+echo "   3. 启动Claude: claude"
+echo "   4. 开始使用: '按照workflow开发[你的项目]'"
+echo "   5. Claude会先与你讨论需求，然后开始multi-agent开发"
 echo ""
 echo "⚠️  重要提醒:"
+echo "   - CLAUDE.md必须包含HO-Agent配置才能正常工作"
 echo "   - 临时验证文件必须完成5步生命周期"
 echo "   - 验证成功后自动继续，不询问确认"
 echo "   - 只在架构变更和部署时需要人工批准"
